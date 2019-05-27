@@ -2,12 +2,12 @@ Neos:
   Neos:
     fusion:
       autoInclude:
-        Shel.Neos.ContentTransfer: true
+        Shel.Neos.TransferContent: true
 
     userInterface:
       translation:
         autoInclude:
-          Shel.Neos.ContentTransfer: []
+          Shel.Neos.TransferContent: []
 
     modules:
       management:
