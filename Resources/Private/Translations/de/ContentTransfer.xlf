@@ -3,51 +3,66 @@
     <file original="" product-name="Shel.Neos.TransferContent" source-language="en" target-language="de" datatype="plaintext">
         <body>
             <trans-unit id="label" xml:space="preserve">
-                <source>Inhalte transferieren</source>
+                <source>Transfer content</source>
+                <target>Inhalte transferieren</target>
             </trans-unit>
             <trans-unit id="description" xml:space="preserve">
-                <source>Erlaubt es Inhalte zwischen Seiten zu transferieren.</source>
+                <source>Allows copying pages and their content between multiple sites.</source>
+                <target>Erlaubt das Kopieren von Seiten und deren Inhalt zwischen mehreren Seiten.</target>
             </trans-unit>
 
             <trans-unit id="copyNode" xml:space="preserve">
-                <source>Transfer nodes</source>
+                <source>Transfer document nodes</source>
+                <target>Dokumentknoten kopieren</target>
             </trans-unit>
             <trans-unit id="sourceSite" xml:space="preserve">
                 <source>Source site</source>
+                <target>Quellseite</target>
             </trans-unit>
             <trans-unit id="sourceNodePath" xml:space="preserve">
                 <source>Identifier of document node that should be copied</source>
+                <target>Identifikator des Dokumentknotens der kopiert werden soll</target>
             </trans-unit>
             <trans-unit id="targetSite" xml:space="preserve">
                 <source>Target site</source>
+                <target>Zielseite</target>
             </trans-unit>
             <trans-unit id="targetParentNodePath" xml:space="preserve">
                 <source>Identifier of document node, the copied node will be appended to as child</source>
+                <target>Identifikator des Dokumentknotens, an den der kopierte Knoten angehängt werden soll</target>
             </trans-unit>
             <trans-unit id="copy" xml:space="preserve">
                 <source>Copy</source>
+                <target>Kopieren</target>
             </trans-unit>
 
             <trans-unit id="error.sourceNodeNotFound" xml:space="preserve">
                 <source>Source node not found</source>
+                <target>Quelle nicht gefunden</target>
             </trans-unit>
             <trans-unit id="error.targetParentNodeNotFound" xml:space="preserve">
                 <source>Target node not found</source>
+                <target>Ziel nicht gefunden</target>
             </trans-unit>
             <trans-unit id="error.invalidSourceNode" xml:space="preserve">
                 <source>The source node is not of type "Document", but of type "{0}"</source>
+                <target>Der Quellknoten ist nicht vom Typ "Document", aber vom Typ "{0}"</target>
             </trans-unit>
             <trans-unit id="error.invalidTargetParentNode" xml:space="preserve">
                 <source>The target node is not of type "Document", but of type "{0}"</source>
+                <target>Der Zielknoten ist nicht vom Typ "Document", aber vom Typ "{0}"</target>
             </trans-unit>
             <trans-unit id="error.sourceNodeNotAllowedAsChildNode" xml:space="preserve">
                 <source>The type of the copied node is not allowed as child of the target node</source>
+                <target>Der Typ des kopierten Knotens ist nicht als Kind vom Zielknoten erlaubt</target>
             </trans-unit>
             <trans-unit id="error.copyFailed" xml:space="preserve">
                 <source>An error occurred while copying. Reference code "{0}"</source>
+                <target>Beim Kopieren ist ein Fehler aufgetreten. Referenz "{0}"</target>
             </trans-unit>
             <trans-unit id="message.copied" xml:space="preserve">
                 <source>The node was copied</source>
+                <target>Der Knoten wurde kopiert</target>
             </trans-unit>
         </body>
     </file>

@@ -3,14 +3,14 @@
     <file original="" product-name="Shel.Neos.TransferContent" source-language="en" datatype="plaintext">
         <body>
             <trans-unit id="label" xml:space="preserve">
-                <source>Inhalte transferieren</source>
+                <source>Transfer content</source>
             </trans-unit>
             <trans-unit id="description" xml:space="preserve">
-                <source>Erlaubt es Inhalte zwischen Seiten zu transferieren.</source>
+                <source>Allows copying pages and their content between multiple sites.</source>
             </trans-unit>
 
             <trans-unit id="copyNode" xml:space="preserve">
-                <source>Transfer nodes</source>
+                <source>Transfer document nodes</source>
             </trans-unit>
             <trans-unit id="sourceSite" xml:space="preserve">
                 <source>Source site</source>
