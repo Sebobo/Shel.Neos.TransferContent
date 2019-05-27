@@ -9,11 +9,11 @@
         <fieldset>
             <div class="neos-row-fluid">
                 <fieldset class="neos-span5">
-                    <legend>{neos:backend.translate(id: 'Shel.Neos.TransferContent:copyNode')}</legend>
+                    <legend>{neos:backend.translate(id: 'Shel.Neos.TransferContent:ContentTransfer:copyNode')}</legend>
 
                     <div class="neos-control-group{f:validation.ifHasErrors(for: 'sourceSite', then: ' neos-error')}">
                         <label class="neos-control-label" for="sourceSite">
-                            {neos:backend.translate(id: 'Shel.Neos.TransferContent:sourceSite')}
+                            {neos:backend.translate(id: 'Shel.Neos.TransferContent:ContentTransfer:sourceSite')}
                         </label>
                         <div class="neos-controls">
                             <f:form.select options="{sites}" optionLabelField="name" value="{sourceSite}"
@@ -25,7 +25,7 @@
 
                     <div class="neos-control-group{f:validation.ifHasErrors(for: 'sourceNodePath', then: ' neos-error')}">
                         <label class="neos-control-label" for="sourceNodePath">
-                            {neos:backend.translate(id: 'Shel.Neos.TransferContent:sourceNodePath')}
+                            {neos:backend.translate(id: 'Shel.Neos.TransferContent:ContentTransfer:sourceNodePath')}
                         </label>
                         <div class="neos-controls">
                             <f:form.textfield name="sourceNodePath" id="sourceNodePath" class="neos-span12"
@@ -37,7 +37,7 @@
 
                     <div class="neos-control-group{f:validation.ifHasErrors(for: 'targetSite', then: ' neos-error')}">
                         <label class="neos-control-label" for="targetSite">
-                            {neos:backend.translate(id: 'Shel.Neos.TransferContent:targetSite')}
+                            {neos:backend.translate(id: 'Shel.Neos.TransferContent:ContentTransfer:targetSite')}
                         </label>
                         <div class="neos-controls">
                             <f:form.select options="{sites}" optionLabelField="name" value="{targetSite}"
@@ -49,7 +49,7 @@
 
                     <div class="neos-control-group{f:validation.ifHasErrors(for: 'targetParentNodePath', then: ' neos-error')}">
                         <label class="neos-control-label" for="targetParentNodePath">
-                            {neos:backend.translate(id: 'Shel.Neos.TransferContent:targetParentNodePath')}
+                            {neos:backend.translate(id: 'Shel.Neos.TransferContent:ContentTransfer:targetParentNodePath')}
                         </label>
                         <div class="neos-controls">
                             <f:form.textfield name="targetParentNodePath" id="targetParentNodePath"
