@@ -11,7 +11,7 @@ It's currently compatible with Neos 4.3.
 
 Run this in your site package
 
-    composer require --no-update shel/neos-hyphens
+    composer require --no-update shel/neos-transfercontent
     
 Then run `composer update` in your project directory.
 
