@@ -1,0 +1,20 @@
+Neos:
+  Neos:
+    fusion:
+      autoInclude:
+        Shel.Neos.ContentTransfer: true
+
+    userInterface:
+      translation:
+        autoInclude:
+          Shel.Neos.ContentTransfer: []
+
+    modules:
+      management:
+        submodules:
+          contentTransfer:
+            label: 'Shel.Neos.TransferContent:ContentTransfer:label'
+            controller: \Shel\Neos\TransferContent\Controller\ContentTransferController
+            description: 'Shel.Neos.TransferContent:ContentTransfer:description'
+            icon: 'fas fa-exchange-alt'
+            privilegeTarget: 'Shel.Neos.TransferContent:Backend.Module.Management.ContentTransfer'

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en"
+      xmlns:f="http://typo3.org/ns/TYPO3/Fluid/ViewHelpers"
+      xmlns:neos="http://typo3.org/ns/Neos/Neos/ViewHelpers">
+<f:layout name="BackendModule"/>
+
+<f:section name="content">
+    <f:form action="copyNode" method="POST">
+        <fieldset>
+            <div class="neos-row-fluid">
+                <fieldset class="neos-span5">
+                    <legend>{neos:backend.translate(id: 'Shel.Neos.TransferContent:copyNode')}</legend>
+
+                    <div class="neos-control-group{f:validation.ifHasErrors(for: 'sourceSite', then: ' neos-error')}">
+                        <label class="neos-control-label" for="sourceSite">
+                            {neos:backend.translate(id: 'Shel.Neos.TransferContent:sourceSite')}
+                        </label>
+                        <div class="neos-controls">
+                            <f:form.select options="{sites}" optionLabelField="name" value="{sourceSite}"
+                                           id="sourceSite" class="neos-span12" name="sourceSite"/>
+                            <f:render partial="Module/Shared/FieldValidationResults"
+                                      arguments="{fieldname: 'sourceSite'}"/>
+                        </div>
+                    </div>
+
+                    <div class="neos-control-group{f:validation.ifHasErrors(for: 'sourceNodePath', then: ' neos-error')}">
+                        <label class="neos-control-label" for="sourceNodePath">
+                            {neos:backend.translate(id: 'Shel.Neos.TransferContent:sourceNodePath')}
+                        </label>
+                        <div class="neos-controls">
+                            <f:form.textfield name="sourceNodePath" id="sourceNodePath" class="neos-span12"
+                                              required="true"/>
+                            <f:render partial="Module/Shared/FieldValidationResults"
+                                      arguments="{fieldname: 'sourceNodePath'}"/>
+                        </div>
+                    </div>
+
+                    <div class="neos-control-group{f:validation.ifHasErrors(for: 'targetSite', then: ' neos-error')}">
+                        <label class="neos-control-label" for="targetSite">
+                            {neos:backend.translate(id: 'Shel.Neos.TransferContent:targetSite')}
+                        </label>
+                        <div class="neos-controls">
+                            <f:form.select options="{sites}" optionLabelField="name" value="{targetSite}"
+                                           id="targetSite" class="neos-span12" name="targetSite"/>
+                            <f:render partial="Module/Shared/FieldValidationResults"
+                                      arguments="{fieldname: 'targetSite'}"/>
+                        </div>
+                    </div>
+
+                    <div class="neos-control-group{f:validation.ifHasErrors(for: 'targetParentNodePath', then: ' neos-error')}">
+                        <label class="neos-control-label" for="targetParentNodePath">
+                            {neos:backend.translate(id: 'Shel.Neos.TransferContent:targetParentNodePath')}
+                        </label>
+                        <div class="neos-controls">
+                            <f:form.textfield name="targetParentNodePath" id="targetParentNodePath"
+                                              class="neos-span12" required="true" value="{targetParentNodePath}"/>
+                            <f:render partial="Module/Shared/FieldValidationResults"
+                                      arguments="{fieldname: 'targetParentNodePath'}"/>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+            <f:form.submit value="{neos:backend.translate(id: 'Shel.Neos.TransferContent:ContentTransfer:copy')}"
+                           class="neos-button neos-button-primary"/>
+        </fieldset>
+    </f:form>
+</f:section>
+</html>

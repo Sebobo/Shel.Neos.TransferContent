@@ -1,0 +1,11 @@
+privilegeTargets:
+  Neos\Flow\Security\Authorization\Privilege\Method\MethodPrivilege:
+    Shel.Neos.TransferContent:Backend.Module.Management.ContentTransfer:
+      matcher: 'method(Shel\Neos\TransferContent\Controller\ContentTransferController->.*Action())'
+
+roles:
+  'Neos.Neos:Administrator':
+    privileges:
+      -
+        privilegeTarget: 'Shel.Neos.TransferContent:Backend.Module.Management.ContentTransfer'
+        permission: GRANT

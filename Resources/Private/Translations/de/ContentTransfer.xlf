@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" product-name="Shel.Neos.TransferContent" source-language="en" target-language="de" datatype="plaintext">
+        <body>
+            <trans-unit id="label" xml:space="preserve">
+                <source>Inhalte transferieren</source>
+            </trans-unit>
+            <trans-unit id="description" xml:space="preserve">
+                <source>Erlaubt es Inhalte zwischen Seiten zu transferieren.</source>
+            </trans-unit>
+
+            <trans-unit id="copyNode" xml:space="preserve">
+                <source>Transfer nodes</source>
+            </trans-unit>
+            <trans-unit id="sourceSite" xml:space="preserve">
+                <source>Source site</source>
+            </trans-unit>
+            <trans-unit id="sourceNodePath" xml:space="preserve">
+                <source>Identifier of document node that should be copied</source>
+            </trans-unit>
+            <trans-unit id="targetSite" xml:space="preserve">
+                <source>Target site</source>
+            </trans-unit>
+            <trans-unit id="targetParentNodePath" xml:space="preserve">
+                <source>Identifier of document node, the copied node will be appended to as child</source>
+            </trans-unit>
+            <trans-unit id="copy" xml:space="preserve">
+                <source>Copy</source>
+            </trans-unit>
+
+            <trans-unit id="error.sourceNodeNotFound" xml:space="preserve">
+                <source>Source node not found</source>
+            </trans-unit>
+            <trans-unit id="error.targetParentNodeNotFound" xml:space="preserve">
+                <source>Target node not found</source>
+            </trans-unit>
+            <trans-unit id="error.invalidSourceNode" xml:space="preserve">
+                <source>The source node is not of type "Document", but of type "{0}"</source>
+            </trans-unit>
+            <trans-unit id="error.invalidTargetParentNode" xml:space="preserve">
+                <source>The target node is not of type "Document", but of type "{0}"</source>
+            </trans-unit>
+            <trans-unit id="error.sourceNodeNotAllowedAsChildNode" xml:space="preserve">
+                <source>The type of the copied node is not allowed as child of the target node</source>
+            </trans-unit>
+            <trans-unit id="error.copyFailed" xml:space="preserve">
+                <source>An error occurred while copying. Reference code "{0}"</source>
+            </trans-unit>
+            <trans-unit id="message.copied" xml:space="preserve">
+                <source>The node was copied</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>
