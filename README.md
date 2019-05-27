@@ -6,6 +6,16 @@ This plugin will add a new backend module for copying nodes between sites in a
 Neos multi site installation.
 
 It's currently compatible with Neos 4.3.
+
+### Warning
+
+This package was built to solve a very specific issue and should only be used by 
+website administrators who know what their doing.
+
+Future versions of this package might improve the usability and PRs to do this are very welcome.
+
+Also note that references and links inside the copied nodes are not updated to link to their copied target 
+and therefore still link to the site where they were copied from.
                 
 ## Installation
 
