@@ -21,7 +21,7 @@ and therefore still link to the site where they were copied from.
 
 Run this in your site package
 
-    composer require --no-update shel/neos-hyphens
+    composer require --no-update shel/neos-transfercontent
     
 Then run `composer update` in your project directory.
 
