@@ -5,7 +5,7 @@
 This plugin will add a new backend module for copying nodes between sites in a 
 Neos multi site installation.
 
-It's currently compatible with Neos 4.3.
+It's currently compatible with Neos 4.3 and the 5.* branch
 
 ### Warning
 
@@ -21,13 +21,18 @@ and therefore still link to the site where they were copied from.
 
 Run this in your site package
 
-    composer require --no-update shel/neos-hyphens
+    composer require --no-update shel/neos-transfercontent
     
 Then run `composer update` in your project directory.
 
 ## How to use
 
-TODO
+ 1. Open the "Transfer content" module located in the module menu
+ 2. In the first dropdown, choose what site you are copying from
+ 3. Enter the `identifier` of page you would like to copy. The identifier can be found in the inspector to your right, when you are editing a document node. Expand the "Additional info" box for the details
+ 4. Choose what site you are copying to
+ 5. Enter the `identifier` where you would like the content to be copied **into**. Please understand, that the tool take the page chosen above **including subpages** and copies **into** the identifier your enter. It doesn't override the entered page
+
 
 ## Contributions
 
