@@ -7,6 +7,10 @@ Neos multi site installation.
 
 It's currently compatible with Neos 4.3 and the 5.* branch
 
+## Example
+
+![Preview](Documentation/example.png) 
+
 ### Warning
 
 This package was built to solve a very specific issue and should only be used by 
