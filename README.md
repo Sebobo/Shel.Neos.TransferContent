@@ -9,7 +9,7 @@ It's currently compatible with Neos 4.3 and the 5.* branch
 
 ## Example
 
-![Preview](https://i.imgur.com/6zgOgbF.png) 
+![Preview](Documentation/example.png) 
 
 ### Warning
 
