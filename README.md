@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This plugin will add a new backend module for copying nodes between sites in a 
+This plugin will add a new backend module for copying and moving nodes between sites in a 
 Neos multi site installation.
 
 It's currently compatible with Neos 4.3 and the 5.* branch
@@ -37,6 +37,19 @@ Then run `composer update` in your project directory.
  4. Choose what site you are copying to
  5. Enter the `identifier` where you would like the content to be copied **into**. Please understand, that the tool take the page chosen above **including subpages** and copies **into** the identifier your enter. It doesn't override the entered page
 
+### Settings
+
+You can also optionally allow to move nodes instead of copying them by setting the following setting in your `Settings.yaml`:
+```yaml
+Shel:
+  Neos:
+    TransferContent:
+      allowNodeMoving: true 
+```
+
+If the settings is active a checkbox is shown where the user can opt to move the nodes instead of copying them.
+
+![Preview](Documentation/example-extended.png)
 
 ## Contributions
 

@@ -31,9 +31,22 @@
                 <source>Identifier of document node, the copied node will be appended to as child</source>
                 <target>Identifikator des Dokumentknotens, an den der kopierte Knoten angehängt werden soll</target>
             </trans-unit>
-            <trans-unit id="copy" xml:space="preserve">
-                <source>Copy</source>
-                <target>Kopieren</target>
+            <trans-unit id="moveNodesInstead" xml:space="preserve">
+                <source>Should the node be moved entirely instead?</source>
+                <target>Soll der Knoten stattdessen vollständig verschoben werden?</target>
+            </trans-unit>
+            <trans-unit id="submit" xml:space="preserve">
+                <source>Proceed</source>
+                <target>Fortführen</target>
+            </trans-unit>
+
+            <trans-unit id="help.headline" xml:space="preserve">
+                <source>Move vs Copy</source>
+                <target>Verschieben vs. Kopieren</target>
+            </trans-unit>
+            <trans-unit id="help.text" xml:space="preserve">
+                <source><![CDATA[If the "Move node entirely" option is active, the entire node will be moved to the target location. As a result, links remain.<br />Copying, on the other hand, creates an independent duplicate at the target.]]></source>
+                <target><![CDATA[Wenn die Option "Knoten vollständig verschieben" aktiv ist, wird die gesamte Node zum Zielort verschoben. Hierdurch bleiben verlinkungen bestehen.<br />Beim kopieren hingegen wird ein eigenständiges Duplikat am Ziel erstellt.]]></target>
             </trans-unit>
 
             <trans-unit id="error.sourceNodeNotFound" xml:space="preserve">
@@ -63,6 +76,10 @@
             <trans-unit id="message.copied" xml:space="preserve">
                 <source>The node was copied</source>
                 <target>Der Knoten wurde kopiert</target>
+            </trans-unit>
+            <trans-unit id="message.copied" xml:space="preserve">
+                <source>The node was moved</source>
+                <target>Der Knoten wurde verschoben</target>
             </trans-unit>
         </body>
     </file>

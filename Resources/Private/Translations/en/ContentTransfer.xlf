@@ -24,8 +24,18 @@
             <trans-unit id="targetParentNodePath" xml:space="preserve">
                 <source>Identifier of document node, the copied node will be appended to as child</source>
             </trans-unit>
-            <trans-unit id="copy" xml:space="preserve">
-                <source>Copy</source>
+            <trans-unit id="moveNodesInstead" xml:space="preserve">
+                <source>Should the node be moved entirely instead?</source>
+            </trans-unit>
+            <trans-unit id="submit" xml:space="preserve">
+                <source>Proceed</source>
+            </trans-unit>
+
+            <trans-unit id="help.headline" xml:space="preserve">
+                <source>Move vs Copy</source>
+            </trans-unit>
+            <trans-unit id="help.text" xml:space="preserve">
+                <source><![CDATA[If the "Move node entirely" option is active, the entire node will be moved to the target location. As a result, links remain.<br />Copying, on the other hand, creates an independent duplicate at the target.]]></source>
             </trans-unit>
 
             <trans-unit id="error.sourceNodeNotFound" xml:space="preserve">
@@ -48,6 +58,9 @@
             </trans-unit>
             <trans-unit id="message.copied" xml:space="preserve">
                 <source>The node was copied</source>
+            </trans-unit>
+            <trans-unit id="message.copied" xml:space="preserve">
+                <source>The node was moved</source>
             </trans-unit>
         </body>
     </file>
