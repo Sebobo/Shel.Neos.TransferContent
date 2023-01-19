@@ -5,6 +5,7 @@ namespace Shel\Neos\TransferContent\Controller;
 use Neos\Flow\Annotations as Flow;
 use Neos\Error\Messages\Message;
 use Neos\Flow\I18n\Translator;
+use Neos\Flow\Mvc\Exception\StopActionException;
 use Neos\Neos\Controller\Module\AbstractModuleController;
 use Neos\Neos\Domain\Model\Site;
 use Neos\Neos\Domain\Repository\SiteRepository;
@@ -47,8 +48,9 @@ class ContentTransferController extends AbstractModuleController
 
     /**
      * Shows form to transfer content
-     * @param Site $sourceSite
-     * @param Site $targetSite
+     *
+     * @param Site|null $sourceSite
+     * @param Site|null $targetSite
      * @param string $targetParentNodePath
      */
     public function indexAction(Site $sourceSite = null, Site $targetSite = null, $targetParentNodePath = '')
@@ -60,6 +62,7 @@ class ContentTransferController extends AbstractModuleController
             'sourceSite' => $sourceSite,
             'targetSite' => $targetSite,
             'targetParentNodePath' => $targetParentNodePath,
+            'allowNodeMoving' => $this->settings['allowNodeMoving'],
         ]);
     }
 
@@ -68,11 +71,12 @@ class ContentTransferController extends AbstractModuleController
      * @param Site $targetSite
      * @param string $sourceNodePath
      * @param string $targetParentNodePath
+     * @param bool $moveNodesInstead
+     * @throws StopActionException
      * @Flow\Validate(argumentName="sourceNodePath", type="\Neos\Flow\Validation\Validator\NotEmptyValidator")
      * @Flow\Validate(argumentName="targetParentNodePath", type="\Neos\Flow\Validation\Validator\NotEmptyValidator")
-     * @throws \Neos\Flow\Mvc\Exception\StopActionException
      */
-    public function copyNodeAction(Site $sourceSite, Site $targetSite, $sourceNodePath, $targetParentNodePath)
+    public function copyNodeAction(Site $sourceSite, Site $targetSite, string $sourceNodePath, string $targetParentNodePath, bool $moveNodesInstead = false)
     {
         /** @var ContentContext $sourceContext */
         $sourceContext = $this->contextFactory->create([
@@ -123,11 +127,19 @@ class ContentTransferController extends AbstractModuleController
             );
         } else {
             try {
-                $this->nodeOperations->copy($sourceNode, $targetParentNode, 'into');
-                $this->addFlashMessage(
-                    $this->translate('message.copied'),
-                    'Success'
-                );
+                if ($moveNodesInstead) {
+                    $this->nodeOperations->move($sourceNode, $targetParentNode, 'into');
+                    $this->addFlashMessage(
+                        $this->translate('message.moved'),
+                        'Success'
+                    );
+                } else {
+                    $this->nodeOperations->copy($sourceNode, $targetParentNode, 'into');
+                    $this->addFlashMessage(
+                        $this->translate('message.copied'),
+                        'Success'
+                    );
+                }
             } catch (NodeException $e) {
                 $this->addFlashMessage(
                     $this->translate('error.copyFailed', [$e->getReferenceCode()]),

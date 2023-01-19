@@ -58,9 +58,24 @@
                                       arguments="{fieldname: 'targetParentNodePath'}"/>
                         </div>
                     </div>
+
+                    <f:if condition="{allowNodeMoving}">
+                        <f:then>
+                            <div class="neos-control-group">
+                                <label class="neos-checkbox neos-inline">
+                                    <f:form.checkbox name="moveNodesInstead" value="1"/>
+                                    <span></span> {neos:backend.translate(id: 'Shel.Neos.TransferContent:ContentTransfer:moveNodesInstead')}
+                                </label>
+                            </div>
+                            <div>
+                                <h3>{neos:backend.translate(id: 'Shel.Neos.TransferContent:ContentTransfer:help.headline')}</h3>
+                                <p>{neos:backend.translate(id: 'Shel.Neos.TransferContent:ContentTransfer:help.text') -> f:format.raw()}</p>
+                            </div>
+                        </f:then>
+                    </f:if>
                 </fieldset>
             </div>
-            <f:form.submit value="{neos:backend.translate(id: 'Shel.Neos.TransferContent:ContentTransfer:copy')}"
+            <f:form.submit value="{neos:backend.translate(id: 'Shel.Neos.TransferContent:ContentTransfer:submit')}"
                            class="neos-button neos-button-primary"/>
         </fieldset>
     </f:form>

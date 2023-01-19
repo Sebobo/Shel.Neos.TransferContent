@@ -19,3 +19,8 @@ Neos:
             description: 'Shel.Neos.TransferContent:ContentTransfer:description'
             icon: 'fas fa-exchange-alt'
             privilegeTarget: 'Shel.Neos.TransferContent:Backend.Module.Management.ContentTransfer'
+
+Shel:
+  Neos:
+    TransferContent:
+      allowNodeMoving: false
