@@ -77,7 +77,7 @@
                 <source>The node was copied</source>
                 <target>Der Knoten wurde kopiert</target>
             </trans-unit>
-            <trans-unit id="message.copied" xml:space="preserve">
+            <trans-unit id="message.moved" xml:space="preserve">
                 <source>The node was moved</source>
                 <target>Der Knoten wurde verschoben</target>
             </trans-unit>
