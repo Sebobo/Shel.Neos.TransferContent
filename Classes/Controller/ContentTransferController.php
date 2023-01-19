@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Shel\Neos\TransferContent\Controller;
 
 use Neos\Flow\Annotations as Flow;
@@ -48,12 +50,8 @@ class ContentTransferController extends AbstractModuleController
 
     /**
      * Shows form to transfer content
-     *
-     * @param Site|null $sourceSite
-     * @param Site|null $targetSite
-     * @param string $targetParentNodePath
      */
-    public function indexAction(Site $sourceSite = null, Site $targetSite = null, $targetParentNodePath = '')
+    public function indexAction(Site $sourceSite = null, Site $targetSite = null, string $targetParentNodePath = '')
     {
         $sites = $this->siteRepository->findOnline();
 
@@ -67,11 +65,6 @@ class ContentTransferController extends AbstractModuleController
     }
 
     /**
-     * @param Site $sourceSite
-     * @param Site $targetSite
-     * @param string $sourceNodePath
-     * @param string $targetParentNodePath
-     * @param bool $moveNodesInstead
      * @throws StopActionException
      * @Flow\Validate(argumentName="sourceNodePath", type="\Neos\Flow\Validation\Validator\NotEmptyValidator")
      * @Flow\Validate(argumentName="targetParentNodePath", type="\Neos\Flow\Validation\Validator\NotEmptyValidator")
@@ -156,13 +149,13 @@ class ContentTransferController extends AbstractModuleController
         ]);
     }
 
-    /**
-     * @param string $id
-     * @param array $arguments
-     * @return string
-     */
-    protected function translate($id, array $arguments = [])
+    protected function translate(string $id, array $arguments = []): string
     {
-        return $this->translator->translateById($id, $arguments, null, null, 'ContentTransfer', 'Shel.Neos.TransferContent');
+        try {
+            $translation = $this->translator->translateById($id, $arguments, null, null, 'ContentTransfer', 'Shel.Neos.TransferContent');
+        } catch (\Exception $e) {
+            // Ignore exception
+        }
+        return $translation ?? $id;
     }
 }
