@@ -21,6 +21,9 @@
             <trans-unit id="targetSite" xml:space="preserve">
                 <source>Target site</source>
             </trans-unit>
+            <trans-unit id="targetWorkspace" xml:space="preserve">
+                <source>Target workspace</source>
+            </trans-unit>
             <trans-unit id="targetParentNodePath" xml:space="preserve">
                 <source>Identifier of document node, the copied node will be appended to as child</source>
             </trans-unit>

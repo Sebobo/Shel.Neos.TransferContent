@@ -36,6 +36,7 @@ Then run `composer update` in your project directory.
  3. Enter the `identifier` of page you would like to copy. The identifier can be found in the inspector to your right, when you are editing a document node. Expand the "Additional info" box for the details
  4. Choose what site you are copying to
  5. Enter the `identifier` where you would like the content to be copied **into**. Please understand, that the tool take the page chosen above **including subpages** and copies **into** the identifier your enter. It doesn't override the entered page
+ 6. Choose what workspace you are copying to. If another workspace than `live` is chosen than content in the target site is **not** published yet after the operation.
 
 ### Settings
 

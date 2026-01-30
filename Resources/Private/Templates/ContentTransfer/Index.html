@@ -59,6 +59,19 @@
                         </div>
                     </div>
 
+                    <div class="neos-control-group{f:validation.ifHasErrors(for: 'targetWorkspace', then: ' neos-error')}">
+                        <label class="neos-control-label" for="targetWorkspace">
+                            {neos:backend.translate(id: 'Shel.Neos.TransferContent:ContentTransfer:targetWorkspace')}
+                        </label>
+
+                        <div class="neos-controls">
+                            <f:form.select options="{workspaces}" optionLabelField="title" value="{targetWorkspace}"
+                                           id="targetWorkspace" class="neos-span12" name="targetWorkspace"/>
+                            <f:render partial="Module/Shared/FieldValidationResults"
+                                      arguments="{fieldname: 'targetWorkspace'}"/>
+                        </div>
+                    </div>
+
                     <f:if condition="{allowNodeMoving}">
                         <f:then>
                             <div class="neos-control-group">

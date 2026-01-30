@@ -4,17 +4,20 @@ declare(strict_types=1);
 
 namespace Shel\Neos\TransferContent\Controller;
 
-use Neos\Flow\Annotations as Flow;
+use Neos\ContentRepository\Domain\Model\Workspace;
+use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
+use Neos\ContentRepository\Domain\Service\ContextFactory;
+use Neos\ContentRepository\Exception\NodeException;
 use Neos\Error\Messages\Message;
+use Neos\Flow\Annotations as Flow;
 use Neos\Flow\I18n\Translator;
 use Neos\Flow\Mvc\Exception\StopActionException;
 use Neos\Neos\Controller\Module\AbstractModuleController;
 use Neos\Neos\Domain\Model\Site;
 use Neos\Neos\Domain\Repository\SiteRepository;
 use Neos\Neos\Domain\Service\ContentContext;
+use Neos\Neos\Domain\Service\UserService as DomainUserService;
 use Neos\Neos\Service\NodeOperations;
-use Neos\ContentRepository\Domain\Service\ContextFactory;
-use Neos\ContentRepository\Exception\NodeException;
 
 /**
  * Controller
@@ -38,6 +41,12 @@ class ContentTransferController extends AbstractModuleController
 
     /**
      * @Flow\Inject
+     * @var WorkspaceRepository
+     */
+    protected $workspaceRepository;
+
+    /**
+     * @Flow\Inject
      * @var ContextFactory
      */
     protected $contextFactory;
@@ -49,17 +58,28 @@ class ContentTransferController extends AbstractModuleController
     protected $translator;
 
     /**
+     * @Flow\Inject
+     * @var DomainUserService
+     */
+    protected $domainUserService;
+
+    /**
      * Shows form to transfer content
      */
-    public function indexAction(Site $sourceSite = null, Site $targetSite = null, string $targetParentNodePath = '')
+    public function indexAction(?Site $sourceSite = null, ?Site $targetSite = null, string $targetParentNodePath = '', ?Workspace $targetWorkspace = null)
     {
         $sites = $this->siteRepository->findOnline();
+        $workspaces = array_filter($this->workspaceRepository->findAll()->toArray(), function (Workspace $workspace) {
+            return $this->domainUserService->currentUserCanPublishToWorkspace($workspace);
+        });
 
         $this->view->assignMultiple([
             'sites' => $sites,
+            'workspaces' => $workspaces,
             'sourceSite' => $sourceSite,
             'targetSite' => $targetSite,
             'targetParentNodePath' => $targetParentNodePath,
+            'targetWorkspace' => $targetWorkspace,
             'allowNodeMoving' => $this->settings['allowNodeMoving'],
         ]);
     }
@@ -69,7 +89,14 @@ class ContentTransferController extends AbstractModuleController
      * @Flow\Validate(argumentName="sourceNodePath", type="\Neos\Flow\Validation\Validator\NotEmptyValidator")
      * @Flow\Validate(argumentName="targetParentNodePath", type="\Neos\Flow\Validation\Validator\NotEmptyValidator")
      */
-    public function copyNodeAction(Site $sourceSite, Site $targetSite, string $sourceNodePath, string $targetParentNodePath, bool $moveNodesInstead = false)
+    public function copyNodeAction(
+        Site $sourceSite,
+        Site $targetSite,
+        string $sourceNodePath,
+        string $targetParentNodePath,
+        ?Workspace $targetWorkspace = null,
+        bool $moveNodesInstead = false
+    )
     {
         /** @var ContentContext $sourceContext */
         $sourceContext = $this->contextFactory->create([
@@ -81,6 +108,7 @@ class ContentTransferController extends AbstractModuleController
         /** @var ContentContext $targetContext */
         $targetContext = $this->contextFactory->create([
             'currentSite' => $targetSite,
+            'workspaceName' => $targetWorkspace ? $targetWorkspace->getName() : 'live',
             'invisibleContentShown' => true,
             'inaccessibleContentShown' => true
         ]);
@@ -146,6 +174,7 @@ class ContentTransferController extends AbstractModuleController
             'sourceSite' => $sourceSite,
             'targetSite' => $targetSite,
             'targetParentNodePath' => $targetParentNodePath,
+            'targetWorkspace' => $targetWorkspace,
         ]);
     }
 

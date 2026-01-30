@@ -31,6 +31,10 @@
                 <source>Identifier of document node, the copied node will be appended to as child</source>
                 <target>Identifikator des Dokumentknotens, an den der kopierte Knoten angehängt werden soll</target>
             </trans-unit>
+            <trans-unit id="targetWorkspace" xml:space="preserve">
+                <source>Target workspace</source>
+                <target>Zielarbeitsbereich</target>
+            </trans-unit>
             <trans-unit id="moveNodesInstead" xml:space="preserve">
                 <source>Should the node be moved entirely instead?</source>
                 <target>Soll der Knoten stattdessen vollständig verschoben werden?</target>
