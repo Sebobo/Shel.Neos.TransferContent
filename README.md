@@ -2,10 +2,10 @@
 
 ## Introduction
 
-This plugin will add a new backend module for copying and moving nodes between sites in a 
+This plugin will add a new backend module for copying and moving nodes between sites in a
 Neos multi site installation.
 
-It's currently compatible with Neos 4.3 and the 5.* branch
+Compatible with Neos 9.x and PHP 8.3+
 
 ## Example
 

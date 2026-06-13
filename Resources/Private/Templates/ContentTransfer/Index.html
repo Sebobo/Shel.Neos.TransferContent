@@ -65,7 +65,7 @@
                         </label>
 
                         <div class="neos-controls">
-                            <f:form.select options="{workspaces}" optionLabelField="title" value="{targetWorkspace}"
+                            <f:form.select options="{workspaces}" optionLabelField="title" optionValueField="workspace" value="{targetWorkspace}"
                                            id="targetWorkspace" class="neos-span12" name="targetWorkspace"/>
                             <f:render partial="Module/Shared/FieldValidationResults"
                                       arguments="{fieldname: 'targetWorkspace'}"/>
