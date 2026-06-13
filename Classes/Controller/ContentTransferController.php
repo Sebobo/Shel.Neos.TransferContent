@@ -25,6 +25,7 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Flow\I18n\Translator;
 use Neos\Flow\Mvc\Exception\StopActionException;
 use Neos\Flow\Security\Context as SecurityContext;
+use Neos\Fusion\View\FusionView;
 use Neos\Neos\Controller\Module\AbstractModuleController;
 use Neos\Neos\Domain\Model\Site;
 use Neos\Neos\Domain\Repository\SiteRepository;
@@ -38,6 +39,8 @@ use Neos\Neos\Security\Authorization\ContentRepositoryAuthorizationService;
 #[Flow\Scope('singleton')]
 class ContentTransferController extends AbstractModuleController
 {
+    protected $defaultViewObjectName = FusionView::class;
+
     #[Flow\Inject]
     protected readonly SiteRepository $siteRepository;
 
@@ -115,6 +118,7 @@ class ContentTransferController extends AbstractModuleController
             'targetParentNodePath' => $targetParentNodePath,
             'targetWorkspace' => $targetWorkspace,
             'allowNodeMoving' => $this->settings['allowNodeMoving'],
+            'flashMessages' => $this->controllerContext->getFlashMessageContainer()->getMessagesAndFlush(),
         ]);
     }
 

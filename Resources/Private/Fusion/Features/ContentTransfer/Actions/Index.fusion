@@ -1,0 +1,138 @@
+prototype(Shel.Neos.TransferContent:View.ContentTransfer.index) < prototype(Neos.Fusion:Component) {
+  sites = ${sites}
+  workspaces = ${workspaces}
+  sourceSite = ${sourceSite}
+  targetSite = ${targetSite}
+  targetParentNodePath = ${targetParentNodePath}
+  targetWorkspace = ${targetWorkspace}
+  allowNodeMoving = ${allowNodeMoving}
+  flashMessages = ${flashMessages}
+
+  i18n = ${I18n.id('').source('ContentTransfer').package('Shel.Neos.TransferContent')}
+
+  prototype(Neos.Fusion.Form:LabelRenderer) {
+    translationPackage = 'Shel.Neos.TransferContent'
+    translationSource = 'ContentTransfer'
+  }
+
+  prototype(Neos.Fusion.Form:Neos.BackendModule.FieldContainer) {
+    translation.label {
+      package = 'Shel.Neos.TransferContent'
+      source = 'ContentTransfer'
+    }
+  }
+
+  @private {
+    sourceSiteNodeName = ${this.sourceSite && this.sourceSite.nodeName ? this.sourceSite.nodeName.value : ''}
+    targetSiteNodeName = ${this.targetSite && this.targetSite.nodeName ? this.targetSite.nodeName.value : ''}
+    targetWorkspaceName = ${this.targetWorkspace && this.targetWorkspace.workspaceName ? this.targetWorkspace.workspaceName.value : ''}
+    helpText = ${this.i18n.id('help.text').translate()}
+  }
+
+  renderer = afx`
+    <Shel.Neos.TransferContent:Component.FlashMessages flashMessages={props.flashMessages}/>
+    <Neos.Fusion.Form:Form form.target.action="copyNode">
+      <fieldset>
+        <div class="neos-row-fluid">
+          <fieldset class="neos-span5">
+            <legend>{props.i18n.id('copyNode')}</legend>
+
+            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer
+              field.name="sourceSite"
+              label="sourceSite"
+              class="neos-control-group"
+            >
+              <Neos.Fusion.Form:Select attributes.class="neos-span12">
+                <Neos.Fusion:Loop items={props.sites} itemName="site">
+                  <Neos.Fusion.Form:Select.Option
+                    option.value={site.nodeName}
+                    attributes.selected={props.sourceSite && site.nodeName.value == private.sourceSiteNodeName}
+                  >
+                    {site.name}
+                  </Neos.Fusion.Form:Select.Option>
+                </Neos.Fusion:Loop>
+              </Neos.Fusion.Form:Select>
+            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
+
+            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer
+              field.name="sourceNodePath"
+              label="sourceNodePath"
+              class="neos-control-group"
+            >
+              <Neos.Fusion.Form:Textfield
+                attributes.class="neos-span12"
+                attributes.required
+              />
+            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
+
+            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer
+              field.name="targetSite"
+              label="targetSite"
+              class="neos-control-group"
+            >
+              <Neos.Fusion.Form:Select attributes.class="neos-span12">
+                <Neos.Fusion:Loop items={props.sites} itemName="site">
+                  <Neos.Fusion.Form:Select.Option
+                    option.value={site.nodeName}
+                    attributes.selected={props.targetSite && site.nodeName.value == private.targetSiteNodeName}
+                  >
+                    {site.name}
+                  </Neos.Fusion.Form:Select.Option>
+                </Neos.Fusion:Loop>
+              </Neos.Fusion.Form:Select>
+            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
+
+            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer
+              field.name="targetParentNodePath"
+              field.value={props.targetParentNodePath}
+              label="targetParentNodePath"
+              class="neos-control-group"
+            >
+              <Neos.Fusion.Form:Textfield
+                attributes.class="neos-span12"
+                attributes.required
+              />
+            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
+
+            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer
+              field.name="targetWorkspace"
+              label="targetWorkspace"
+              class="neos-control-group"
+            >
+              <Neos.Fusion.Form:Select attributes.class="neos-span12">
+                <Neos.Fusion:Loop items={props.workspaces} itemName="workspace">
+                  <Neos.Fusion.Form:Select.Option
+                    option.value={workspace.workspace}
+                    attributes.selected={props.targetWorkspace && workspace.workspace.value == private.targetWorkspaceName}
+                  >
+                    {workspace.title}
+                  </Neos.Fusion.Form:Select.Option>
+                </Neos.Fusion:Loop>
+              </Neos.Fusion.Form:Select>
+            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
+
+            <div @if={props.allowNodeMoving}>
+              <Neos.Fusion.Form:Neos.BackendModule.FieldContainer
+                field.name="moveNodesInstead"
+                label="moveNodesInstead"
+                class="neos-control-group"
+              >
+                <Neos.Fusion.Form:Checkbox field.value="1"/>
+              </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
+              <div>
+                <h3>{props.i18n.id('help.headline')}</h3>
+                <br/>
+                <p>{private.helpText}</p>
+              </div>
+            </div>
+          </fieldset>
+        </div>
+        <Neos.Fusion.Form:Button attributes.class="neos-button neos-button-primary">
+          {props.i18n.id('submit').translate()}
+        </Neos.Fusion.Form:Button>
+      </fieldset>
+    </Neos.Fusion.Form:Form>
+  `
+}
+
+Shel.Neos.TransferContent.ContentTransferController.index = Shel.Neos.TransferContent:View.ContentTransfer.index
