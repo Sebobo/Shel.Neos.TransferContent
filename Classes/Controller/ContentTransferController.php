@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Shel\Neos\TransferContent\Controller;
 
+use GuzzleHttp\Psr7\Response;
 use Neos\ContentRepository\Core\ContentRepository;
 use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
 use Neos\ContentRepository\Core\DimensionSpace\OriginDimensionSpacePoint;
@@ -11,9 +12,12 @@ use Neos\ContentRepository\Core\Feature\NodeCreation\Command\CreateNodeAggregate
 use Neos\ContentRepository\Core\Feature\NodeModification\Dto\PropertyValuesToWrite;
 use Neos\ContentRepository\Core\Feature\NodeMove\Command\MoveNodeAggregate;
 use Neos\ContentRepository\Core\Feature\NodeMove\Dto\RelationDistributionStrategy;
+use Neos\ContentRepository\Core\Feature\Security\Exception\AccessDenied;
 use Neos\ContentRepository\Core\NodeType\NodeTypeName;
 use Neos\ContentRepository\Core\Projection\ContentGraph\ContentSubgraphInterface;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\CountChildNodesFilter;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindRootNodeAggregatesFilter;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
@@ -25,26 +29,18 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Flow\I18n\Translator;
 use Neos\Flow\Mvc\Exception\StopActionException;
 use Neos\Flow\Security\Context as SecurityContext;
-use Neos\Flow\Security\Policy\Role;
 use Neos\Fusion\View\FusionView;
 use Neos\Neos\Controller\Module\AbstractModuleController;
-use Neos\Neos\Domain\Model\Site;
-use Neos\Neos\Domain\Model\UserId;
-use Neos\Neos\Domain\Repository\SiteRepository;
+use Neos\Neos\Domain\NodeLabel\NodeLabelGeneratorInterface;
 use Neos\Neos\Domain\Service\UserService as DomainUserService;
 use Neos\Neos\Domain\Service\WorkspaceService;
 use Neos\Neos\Security\Authorization\ContentRepositoryAuthorizationService;
+use Psr\Http\Message\ResponseInterface;
 
-/**
- * Controller for transferring content between sites in Neos CMS
- */
 #[Flow\Scope('singleton')]
 class ContentTransferController extends AbstractModuleController
 {
     protected $defaultViewObjectName = FusionView::class;
-
-    #[Flow\Inject]
-    protected readonly SiteRepository $siteRepository;
 
     #[Flow\Inject]
     protected readonly Translator $translator;
@@ -64,88 +60,133 @@ class ContentTransferController extends AbstractModuleController
     #[Flow\Inject]
     protected readonly WorkspaceService $workspaceService;
 
-    private function getContentRepository(?ContentRepositoryId $contentRepositoryId = null): ContentRepository
-    {
-        return $this->contentRepositoryRegistry->get(
-            $contentRepositoryId ?? ContentRepositoryId::fromString('default')
-        );
-    }
+    #[Flow\Inject]
+    protected readonly NodeLabelGeneratorInterface $nodeLabelGenerator;
 
-    /**
-     * Shows form to transfer content
-     */
+    #[Flow\InjectConfiguration(path: 'contentRepositories', package: 'Neos.ContentRepositoryRegistry')]
+    protected array $crSettings = [];
+
     public function indexAction(
-        ?Site $sourceSite = null,
-        ?Site $targetSite = null,
-        string $targetParentNodePath = '',
-        ?Workspace $targetWorkspace = null,
-        ?string $sourceContentRepository = null,
-        ?string $targetContentRepository = null,
+        ?ContentRepositoryId $sourceContentRepository = null,
+        ?ContentRepositoryId $targetContentRepository = null,
+        ?WorkspaceName $sourceWorkspace = null,
+        ?WorkspaceName $targetWorkspace = null,
+        ?string $sourceDimensionValues = '{}',
+        ?string $targetDimensionValues = '{}',
     ): void {
         $contentRepositoryIds = [];
         foreach ($this->contentRepositoryRegistry->getContentRepositoryIds() as $crId) {
             $contentRepositoryIds[] = $crId->value;
         }
 
-        $defaultCr = $contentRepositoryIds[0] ?? 'default';
-        $sourceContentRepository = $sourceContentRepository ?: $defaultCr;
-        $targetContentRepository = $targetContentRepository ?: $defaultCr;
+        $sourceWorkspace = $sourceWorkspace ?? WorkspaceName::forLive();
+        $targetWorkspace = $targetWorkspace ?? WorkspaceName::forLive();
+        $sourceContentRepository = $sourceContentRepository ?: ContentRepositoryId::fromString('default');
+        $targetContentRepository = $targetContentRepository ?: ContentRepositoryId::fromString('default');
 
-        $allSites = $this->siteRepository->findOnline();
+        $sourceWorkspaces = $this->getWorkspacesForCr($sourceContentRepository);
+        $targetWorkspaces = $this->getWorkspacesForCr($targetContentRepository);
 
-        $sourceSites = [];
-        $targetSites = [];
-        foreach ($allSites as $site) {
-            $siteCr = $site->getConfiguration()->contentRepositoryId->value;
-            if ($siteCr === $sourceContentRepository) {
-                $sourceSites[] = $site;
-            }
-            if ($siteCr === $targetContentRepository) {
-                $targetSites[] = $site;
+        $sourceDimensions = $this->buildDimensionConfig($sourceContentRepository);
+        $targetDimensions = $this->buildDimensionConfig($targetContentRepository);
+
+        $parsedSourceDimValues = json_decode($sourceDimensionValues, true, 512, JSON_THROW_ON_ERROR) ?: [];
+        $parsedTargetDimValues = json_decode($targetDimensionValues, true, 512, JSON_THROW_ON_ERROR) ?: [];
+
+        // Always merge defaults for missing dimensions
+        if (!empty($sourceDimensions)) {
+            foreach ($sourceDimensions as $dim) {
+                if (!array_key_exists($dim['id'], $parsedSourceDimValues)) {
+                    $firstValue = $dim['values'][0]['value'] ?? null;
+                    if ($firstValue !== null) {
+                        $parsedSourceDimValues[$dim['id']] = $firstValue;
+                    }
+                }
             }
         }
-
-        $contentRepository = $this->getContentRepository(
-            ContentRepositoryId::fromString($targetContentRepository)
-        );
-        $contentRepositoryId = $contentRepository->id;
-
-        $roles = $this->securityContext->getRoles() ?? [];
-        $userId = $this->domainUserService->getCurrentUser()?->getId();
-
-        $workspaces = $this->getWritableWorkspaces(
-            $contentRepository,
-            $roles,
-            $userId
-        );
-
-        // Build workspace labels with metadata titles
-        $workspaceOptions = [];
-        foreach ($workspaces as $workspace) {
-            $metadata = $this->workspaceService->getWorkspaceMetadata(
-                $contentRepositoryId,
-                $workspace->workspaceName
-            );
-            $workspaceOptions[] = [
-                'workspace' => $workspace->workspaceName,
-                'title' => $metadata->title->value,
-            ];
+        if (!empty($targetDimensions)) {
+            foreach ($targetDimensions as $dim) {
+                if (!array_key_exists($dim['id'], $parsedTargetDimValues)) {
+                    $firstValue = $dim['values'][0]['value'] ?? null;
+                    if ($firstValue !== null) {
+                        $parsedTargetDimValues[$dim['id']] = $firstValue;
+                    }
+                }
+            }
         }
 
         $this->view->assignMultiple([
             'contentRepositoryIds' => $contentRepositoryIds,
             'sourceContentRepository' => $sourceContentRepository,
             'targetContentRepository' => $targetContentRepository,
-            'sourceSites' => $sourceSites,
-            'targetSites' => $targetSites,
-            'workspaces' => $workspaceOptions,
-            'sourceSite' => $sourceSite,
-            'targetSite' => $targetSite,
-            'targetParentNodePath' => $targetParentNodePath,
+            'sourceWorkspaces' => $sourceWorkspaces,
+            'targetWorkspaces' => $targetWorkspaces,
+            'sourceWorkspace' => $sourceWorkspace,
             'targetWorkspace' => $targetWorkspace,
+            'sourceDimensions' => $sourceDimensions,
+            'targetDimensions' => $targetDimensions,
+            'sourceDimensionValues' => $parsedSourceDimValues,
+            'targetDimensionValues' => $parsedTargetDimValues,
             'allowNodeMoving' => $this->settings['allowNodeMoving'],
             'flashMessages' => $this->controllerContext->getFlashMessageContainer()->getMessagesAndFlush(),
         ]);
+    }
+
+    /**
+     * @throws AccessDenied
+     * @throws \JsonException
+     */
+    public function treeChildrenAction(
+        ContentRepositoryId $contentRepositoryId,
+        WorkspaceName $workspaceName = null,
+        ?NodeAggregateId $parentNodeId = null,
+        string $dimensionValues = '{}',
+    ): ResponseInterface {
+        $cr = $this->contentRepositoryRegistry->get($contentRepositoryId);
+        $parsedDimValues = json_decode($dimensionValues, true, 512, JSON_THROW_ON_ERROR) ?: [];
+        $dsp = DimensionSpacePoint::fromArray($parsedDimValues);
+        $subgraph = $cr->getContentSubgraph($workspaceName, $dsp);
+        //\Neos\Flow\var_dump($dsp);
+        //die('hard');
+
+        $nodeTypeFilter = $this->getNodeTypeFilterForCr($contentRepositoryId);
+
+        if ($parentNodeId === null) {
+            $rootNodeAggregate = $cr->getContentGraph($workspaceName)->findRootNodeAggregates(
+                FindRootNodeAggregatesFilter::create()
+            )->first();
+            $children = $subgraph->findChildNodes(
+                $rootNodeAggregate->nodeAggregateId,
+                FindChildNodesFilter::create(nodeTypes: 'Neos.Neos:Node')
+            );
+        } else {
+            $children = $subgraph->findChildNodes(
+                $parentNodeId,
+                FindChildNodesFilter::create(nodeTypes: $nodeTypeFilter)
+            );
+        }
+
+        $result = [];
+        foreach ($children as $child) {
+            $label = $this->nodeLabelGenerator->getLabel($child);
+            $hasChildren = $subgraph->countChildNodes(
+                    $child->aggregateId,
+                    CountChildNodesFilter::create(nodeTypes: $nodeTypeFilter)
+                ) > 0;
+
+            $result[] = [
+                'nodeAggregateId' => $child->aggregateId->value,
+                'label' => $label,
+                'nodeType' => $child->nodeTypeName->value,
+                'hasChildren' => $hasChildren,
+            ];
+        }
+
+        return new Response(
+            200,
+            ['Content-Type' => 'application/json'],
+            json_encode(['children' => $result], JSON_THROW_ON_ERROR)
+        );
     }
 
     /**
@@ -154,31 +195,36 @@ class ContentTransferController extends AbstractModuleController
      * @Flow\Validate(argumentName="targetParentNodePath", type="\Neos\Flow\Validation\Validator\NotEmptyValidator")
      */
     public function copyNodeAction(
-        Site $sourceSite,
-        Site $targetSite,
-        string $sourceNodePath,
-        string $targetParentNodePath,
-        ?Workspace $targetWorkspace = null,
+        string $sourceNodePath = '',
+        string $targetParentNodePath = '',
+        ?WorkspaceName $sourceWorkspace = null,
+        ?WorkspaceName $targetWorkspace = null,
         bool $moveNodesInstead = false,
-        ?string $sourceContentRepository = null,
-        ?string $targetContentRepository = null,
+        ?ContentRepositoryId $sourceContentRepository = null,
+        ?ContentRepositoryId $targetContentRepository = null,
+        string $sourceDimensionValues = '{}',
+        string $targetDimensionValues = '{}',
     ): void {
-        $sourceCrId = $sourceContentRepository
-            ? ContentRepositoryId::fromString($sourceContentRepository)
-            : $sourceSite->getConfiguration()->contentRepositoryId;
-        $targetCrId = $targetContentRepository
-            ? ContentRepositoryId::fromString($targetContentRepository)
-            : $targetSite->getConfiguration()->contentRepositoryId;
+        $sourceContentRepository = $sourceContentRepository ?? ContentRepositoryId::fromString('default');
+        $targetContentRepository = $targetContentRepository ?? ContentRepositoryId::fromString('default');
 
-        $sourceCr = $this->contentRepositoryRegistry->get($sourceCrId);
-        $targetCr = $this->contentRepositoryRegistry->get($targetCrId);
+        $sourceCr = $this->contentRepositoryRegistry->get($sourceContentRepository);
+        $targetCr = $this->contentRepositoryRegistry->get($targetContentRepository);
 
-        $targetWorkspaceName = $targetWorkspace
-            ? $targetWorkspace->workspaceName
-            : WorkspaceName::forLive();
+        $sourceWorkspace = $sourceWorkspace ?: WorkspaceName::forLive();
+        $targetWorkspace = $targetWorkspace ?: WorkspaceName::forLive();
 
-        $sourceSubgraph = $this->getContentSubgraph($sourceCr, $targetWorkspaceName);
-        $targetSubgraph = $this->getContentSubgraph($targetCr, $targetWorkspaceName);
+        $parsedSourceDim = json_decode($sourceDimensionValues, true, 512, JSON_THROW_ON_ERROR) ?: [];
+        $parsedTargetDim = json_decode($targetDimensionValues, true, 512, JSON_THROW_ON_ERROR) ?: [];
+
+        $sourceSubgraph = $sourceCr->getContentSubgraph(
+            $sourceWorkspace,
+            DimensionSpacePoint::fromArray($parsedSourceDim)
+        );
+        $targetSubgraph = $targetCr->getContentSubgraph(
+            $targetWorkspace,
+            DimensionSpacePoint::fromArray($parsedTargetDim)
+        );
 
         $sourceNode = $sourceSubgraph->findNodeById(
             NodeAggregateId::fromString($sourceNodePath)
@@ -228,33 +274,33 @@ class ContentTransferController extends AbstractModuleController
                 'Error',
                 Message::SEVERITY_ERROR
             );
-        } elseif ($sourceNodeType === null || !$targetNodeType->allowsChildNodeType($sourceNodeType)) {
+        } elseif (!$targetNodeType->allowsChildNodeType($sourceNodeType)) {
             $this->addFlashMessage(
                 $this->translate('error.sourceNodeNotAllowedAsChildNode'),
                 'Error',
                 Message::SEVERITY_ERROR
             );
         } elseif ($moveNodesInstead) {
-            if (!$sourceCrId->equals($targetCrId)) {
+            if (!$sourceContentRepository->equals($targetContentRepository)) {
                 $this->addFlashMessage(
-                    'Moving between CRs not implemented yet',
-                    'Unsupported action: Moving between CRs not implemented yet',
+                    $this->translate('error.cannotMoveAcrossCr'),
+                    'Error',
                     Message::SEVERITY_ERROR
                 );
             } else {
-                $this->moveNode($sourceCr, $sourceNode, $targetParentNode, $targetWorkspaceName);
+                $this->moveNode($sourceCr, $sourceNode, $targetParentNode, $targetWorkspace);
             }
         } else {
-            $this->copyNode($sourceCr, $targetCr, $sourceNode, $targetParentNode, $targetWorkspaceName);
+            $this->copyNode($sourceCr, $targetCr, $sourceNode, $targetParentNode, $targetWorkspace);
         }
 
         $this->redirect('index', null, null, [
-            'sourceSite' => $sourceSite,
-            'targetSite' => $targetSite,
-            'targetParentNodePath' => $targetParentNodePath,
-            'targetWorkspace' => $targetWorkspace,
             'sourceContentRepository' => $sourceContentRepository,
             'targetContentRepository' => $targetContentRepository,
+            'sourceWorkspace' => $sourceWorkspace,
+            'targetWorkspace' => $targetWorkspace,
+            'sourceDimensionValues' => $sourceDimensionValues,
+            'targetDimensionValues' => $targetDimensionValues,
         ]);
     }
 
@@ -287,12 +333,6 @@ class ContentTransferController extends AbstractModuleController
         }
     }
 
-    /**
-     * Copy a node with all its children recursively to a new parent.
-     *
-     * In Neos 9's event-sourced content repository, copy requires
-     * recreating node aggregates in the target location.
-     */
     private function copyNode(
         ContentRepository $sourceCr,
         ContentRepository $targetCr,
@@ -301,7 +341,10 @@ class ContentTransferController extends AbstractModuleController
         WorkspaceName $targetWorkspaceName
     ): void {
         try {
-            $sourceSubgraph = $this->getContentSubgraphFromNode($sourceCr, $sourceNode);
+            $sourceSubgraph = $sourceCr->getContentSubgraph(
+                $sourceNode->workspaceName,
+                $sourceNode->dimensionSpacePoint
+            );
 
             $this->copyNodeRecursive(
                 contentRepository: $targetCr,
@@ -368,24 +411,73 @@ class ContentTransferController extends AbstractModuleController
         }
     }
 
-    private function getContentSubgraph(
-        ContentRepository $contentRepository,
-        WorkspaceName $workspaceName
-    ): ContentSubgraphInterface {
-        return $contentRepository->getContentSubgraph(
-            $workspaceName,
-            DimensionSpacePoint::createWithoutDimensions()
-        );
+    private function buildDimensionConfig(ContentRepositoryId $crId): array
+    {
+        $crConfig = $this->crSettings[$crId->value] ?? [];
+        $contentDimensions = $crConfig['contentDimensions'] ?? [];
+
+        $result = [];
+        foreach ($contentDimensions as $dimId => $dimConfig) {
+            if (!is_array($dimConfig)) {
+                continue;
+            }
+
+            $values = [];
+            foreach ($dimConfig['values'] ?? [] as $valId => $valConfig) {
+                if (!is_array($valConfig)) {
+                    continue;
+                }
+                $values[] = [
+                    'value' => $valId,
+                    'label' => $valConfig['label'] ?? $valId,
+                ];
+            }
+
+            $result[] = [
+                'id' => $dimId,
+                'label' => $dimConfig['label'] ?? $dimId,
+                'values' => $values,
+            ];
+        }
+        return $result;
     }
 
-    private function getContentSubgraphFromNode(
-        ContentRepository $contentRepository,
-        Node $node
-    ): ContentSubgraphInterface {
-        return $contentRepository->getContentSubgraph(
-            $node->workspaceName,
-            $node->dimensionSpacePoint
-        );
+    private function getNodeTypeFilterForCr(ContentRepositoryId $crId): string
+    {
+        $filters = $this->settings['nodeTypeFilters'] ?? ['default' => 'Neos.Neos:Document'];
+        return $filters[$crId->value] ?? $filters['default'] ?? 'Neos.Neos:Document';
+    }
+
+    private function getWorkspacesForCr(ContentRepositoryId $crId): array
+    {
+        $contentRepository = $this->contentRepositoryRegistry->get($crId);
+        $roles = $this->securityContext->getRoles();
+        $userId = $this->domainUserService->getCurrentUser()?->getId();
+
+        $workspaces = $contentRepository->findWorkspaces()
+            ->filter(function (Workspace $workspace) use ($crId, $roles, $userId): bool {
+                $permissions = $this->authorizationService->getWorkspacePermissions(
+                    $crId,
+                    $workspace->workspaceName,
+                    $roles,
+                    $userId
+                );
+                return $permissions->write;
+            })
+            ->getIterator();
+
+        $result = [];
+        foreach ($workspaces as $workspace) {
+            $metadata = $this->workspaceService->getWorkspaceMetadata(
+                $crId,
+                $workspace->workspaceName
+            );
+            $result[] = [
+                'workspace' => $workspace->workspaceName,
+                'title' => $metadata->title->value,
+            ];
+        }
+        return $result;
     }
 
     protected function translate(string $id, array $arguments = []): string
@@ -400,30 +492,7 @@ class ContentTransferController extends AbstractModuleController
                 'Shel.Neos.TransferContent'
             );
         } catch (\Exception) {
-            // Ignore exception
         }
         return $translation ?? $id;
-    }
-
-    /**
-     * @param Role[] $roles
-     * @throws \Exception
-     */
-    protected function getWritableWorkspaces(
-        ContentRepository $contentRepository,
-        array $roles,
-        UserId $userId
-    ): iterable {
-        return $contentRepository->findWorkspaces()
-            ->filter(function (Workspace $workspace) use ($contentRepository, $roles, $userId): bool {
-                $permissions = $this->authorizationService->getWorkspacePermissions(
-                    $contentRepository->id,
-                    $workspace->workspaceName,
-                    $roles,
-                    $userId
-                );
-                return $permissions->write;
-            })
-            ->getIterator();
     }
 }

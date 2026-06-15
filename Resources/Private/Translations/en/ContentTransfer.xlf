@@ -12,6 +12,18 @@
             <trans-unit id="copyNode" xml:space="preserve">
                 <source>Transfer document nodes</source>
             </trans-unit>
+            <trans-unit id="sourceDocument" xml:space="preserve">
+                <source>Source document</source>
+            </trans-unit>
+            <trans-unit id="targetDocument" xml:space="preserve">
+                <source>Target document</source>
+            </trans-unit>
+            <trans-unit id="sourceDimension" xml:space="preserve">
+                <source>Source dimensions</source>
+            </trans-unit>
+            <trans-unit id="targetDimension" xml:space="preserve">
+                <source>Target dimensions</source>
+            </trans-unit>
             <trans-unit id="sourceContentRepository" xml:space="preserve">
                 <source>Source content repository</source>
             </trans-unit>
@@ -64,6 +76,9 @@
             </trans-unit>
             <trans-unit id="error.copyFailed" xml:space="preserve">
                 <source>An error occurred while copying. Reference code "{0}"</source>
+            </trans-unit>
+            <trans-unit id="error.cannotMoveAcrossCr" xml:space="preserve">
+                <source>Cannot move nodes across different content repositories</source>
             </trans-unit>
             <trans-unit id="message.copied" xml:space="preserve">
                 <source>The node was copied</source>

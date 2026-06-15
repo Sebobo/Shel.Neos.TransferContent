@@ -1,0 +1,80 @@
+.neos {
+    .content-transfer-tree {
+        margin-bottom: 16px;
+    }
+
+    .ct-tree-header {
+        margin-bottom: 8px;
+    }
+
+    .ct-tree-wrapper {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 2px solid #3f3f3f;
+        padding: 4px 0;
+        background: #3f3f3f;
+    }
+
+    .ct-tree,
+    ul.ct-tree-children {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    ul {
+        .ct-tree-children {
+            padding-left: 20px;
+        }
+
+        li.ct-tree-node {
+            margin: 0;
+            padding: 0;
+            line-height: 1.8;
+        }
+    }
+
+    .ct-tree-toggle {
+        display: inline-block;
+        width: 16px;
+        cursor: pointer;
+        color: #adadad;
+        font-size: 10px;
+        user-select: none;
+        text-align: center;
+
+        &:empty::before {
+            content: "•";
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+        }
+    }
+
+    .ct-tree-label {
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 2px;
+        transition: background-color 0.1s;
+    }
+
+    .ct-tree-label:hover {
+        background-color: #323232;
+    }
+
+    .ct-tree-label--selected {
+        background-color: #323232;
+        font-weight: 600;
+    }
+
+    .ct-selection-info {
+        margin-top: 4px;
+        font-size: 12px;
+        color: #adadad;
+        font-style: italic;
+    }
+
+    .ct-workspace-selector {
+        margin-bottom: 4px;
+    }
+}

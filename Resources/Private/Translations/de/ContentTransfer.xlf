@@ -15,6 +15,22 @@
                 <source>Transfer document nodes</source>
                 <target>Dokumentknoten kopieren</target>
             </trans-unit>
+            <trans-unit id="sourceDocument" xml:space="preserve">
+                <source>Source document</source>
+                <target>Quelldokument</target>
+            </trans-unit>
+            <trans-unit id="targetDocument" xml:space="preserve">
+                <source>Target document</source>
+                <target>Zieldokument</target>
+            </trans-unit>
+            <trans-unit id="sourceDimension" xml:space="preserve">
+                <source>Source dimensions</source>
+                <target>Quell-Dimensionen</target>
+            </trans-unit>
+            <trans-unit id="targetDimension" xml:space="preserve">
+                <source>Target dimensions</source>
+                <target>Ziel-Dimensionen</target>
+            </trans-unit>
             <trans-unit id="sourceContentRepository" xml:space="preserve">
                 <source>Source content repository</source>
                 <target>Quell-Content-Repository</target>
@@ -84,6 +100,10 @@
             <trans-unit id="error.copyFailed" xml:space="preserve">
                 <source>An error occurred while copying. Reference code "{0}"</source>
                 <target>Beim Kopieren ist ein Fehler aufgetreten. Referenz "{0}"</target>
+            </trans-unit>
+            <trans-unit id="error.cannotMoveAcrossCr" xml:space="preserve">
+                <source>Cannot move nodes across different content repositories</source>
+                <target>Knoten können nicht zwischen verschiedenen Content-Repositories verschoben werden</target>
             </trans-unit>
             <trans-unit id="message.copied" xml:space="preserve">
                 <source>The node was copied</source>

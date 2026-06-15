@@ -22,8 +22,6 @@ Neos:
             additionalResources:
               javaScripts:
                 'ContentTransfer': 'resource://Shel.Neos.TransferContent/Public/ContentTransfer.js'
-
-Shel:
-  Neos:
-    TransferContent:
-      allowNodeMoving: false
+                'ContentTransferTree': 'resource://Shel.Neos.TransferContent/Public/ContentTransferTree.js'
+              styleSheets:
+                'ContentTransferTree': 'resource://Shel.Neos.TransferContent/Public/ContentTransferTree.css'
