@@ -15,6 +15,14 @@
                 <source>Transfer document nodes</source>
                 <target>Dokumentknoten kopieren</target>
             </trans-unit>
+            <trans-unit id="sourceContentRepository" xml:space="preserve">
+                <source>Source content repository</source>
+                <target>Quell-Content-Repository</target>
+            </trans-unit>
+            <trans-unit id="targetContentRepository" xml:space="preserve">
+                <source>Target content repository</source>
+                <target>Ziel-Content-Repository</target>
+            </trans-unit>
             <trans-unit id="sourceSite" xml:space="preserve">
                 <source>Source site</source>
                 <target>Quellseite</target>

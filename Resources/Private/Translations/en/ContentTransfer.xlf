@@ -12,6 +12,12 @@
             <trans-unit id="copyNode" xml:space="preserve">
                 <source>Transfer document nodes</source>
             </trans-unit>
+            <trans-unit id="sourceContentRepository" xml:space="preserve">
+                <source>Source content repository</source>
+            </trans-unit>
+            <trans-unit id="targetContentRepository" xml:space="preserve">
+                <source>Target content repository</source>
+            </trans-unit>
             <trans-unit id="sourceSite" xml:space="preserve">
                 <source>Source site</source>
             </trans-unit>

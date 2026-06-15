@@ -1,5 +1,9 @@
 prototype(Shel.Neos.TransferContent:View.ContentTransfer.index) < prototype(Neos.Fusion:Component) {
-  sites = ${sites}
+  contentRepositoryIds = ${contentRepositoryIds}
+  sourceContentRepository = ${sourceContentRepository}
+  targetContentRepository = ${targetContentRepository}
+  sourceSites = ${sourceSites}
+  targetSites = ${targetSites}
   workspaces = ${workspaces}
   sourceSite = ${sourceSite}
   targetSite = ${targetSite}
@@ -27,15 +31,68 @@ prototype(Shel.Neos.TransferContent:View.ContentTransfer.index) < prototype(Neos
     targetSiteNodeName = ${this.targetSite && this.targetSite.nodeName ? this.targetSite.nodeName.value : ''}
     targetWorkspaceName = ${this.targetWorkspace && this.targetWorkspace.workspaceName ? this.targetWorkspace.workspaceName.value : ''}
     helpText = ${this.i18n.id('help.text').translate()}
+    hasMultipleCr = ${props.contentRepositoryIds != null && Array.length(props.contentRepositoryIds) > 1}
   }
 
   renderer = afx`
     <Shel.Neos.TransferContent:Component.FlashMessages flashMessages={props.flashMessages}/>
+
+    <Neos.Fusion.Form:Form form.target.action="index" @if={private.hasMultipleCr}>
+      <fieldset>
+        <div class="neos-row-fluid">
+          <fieldset class="neos-span5">
+            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer
+              field.name="sourceContentRepository"
+              label="sourceContentRepository"
+              class="neos-control-group"
+            >
+              <Neos.Fusion.Form:Select attributes.class="neos-span12" attributes.data-auto-submit="true">
+                <Neos.Fusion:Loop items={props.contentRepositoryIds} itemName="crId">
+                  <Neos.Fusion.Form:Select.Option
+                    option.value={crId}
+                    attributes.selected={props.sourceContentRepository == crId}
+                  >
+                    {crId}
+                  </Neos.Fusion.Form:Select.Option>
+                </Neos.Fusion:Loop>
+              </Neos.Fusion.Form:Select>
+            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
+
+            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer
+              field.name="targetContentRepository"
+              label="targetContentRepository"
+              class="neos-control-group"
+            >
+              <Neos.Fusion.Form:Select attributes.class="neos-span12" attributes.data-auto-submit="true">
+                <Neos.Fusion:Loop items={props.contentRepositoryIds} itemName="crId">
+                  <Neos.Fusion.Form:Select.Option
+                    option.value={crId}
+                    attributes.selected={props.targetContentRepository == crId}
+                  >
+                    {crId}
+                  </Neos.Fusion.Form:Select.Option>
+                </Neos.Fusion:Loop>
+              </Neos.Fusion.Form:Select>
+            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
+          </fieldset>
+        </div>
+      </fieldset>
+    </Neos.Fusion.Form:Form>
+
     <Neos.Fusion.Form:Form form.target.action="copyNode">
       <fieldset>
         <div class="neos-row-fluid">
           <fieldset class="neos-span5">
             <legend>{props.i18n.id('copyNode')}</legend>
+
+            <Neos.Fusion.Form:Hidden
+              field.name="sourceContentRepository"
+              field.value={props.sourceContentRepository}
+            />
+            <Neos.Fusion.Form:Hidden
+              field.name="targetContentRepository"
+              field.value={props.targetContentRepository}
+            />
 
             <Neos.Fusion.Form:Neos.BackendModule.FieldContainer
               field.name="sourceSite"
@@ -43,7 +100,7 @@ prototype(Shel.Neos.TransferContent:View.ContentTransfer.index) < prototype(Neos
               class="neos-control-group"
             >
               <Neos.Fusion.Form:Select attributes.class="neos-span12">
-                <Neos.Fusion:Loop items={props.sites} itemName="site">
+                <Neos.Fusion:Loop items={props.sourceSites} itemName="site">
                   <Neos.Fusion.Form:Select.Option
                     option.value={site.nodeName}
                     attributes.selected={props.sourceSite && site.nodeName.value == private.sourceSiteNodeName}
@@ -71,7 +128,7 @@ prototype(Shel.Neos.TransferContent:View.ContentTransfer.index) < prototype(Neos
               class="neos-control-group"
             >
               <Neos.Fusion.Form:Select attributes.class="neos-span12">
-                <Neos.Fusion:Loop items={props.sites} itemName="site">
+                <Neos.Fusion:Loop items={props.targetSites} itemName="site">
                   <Neos.Fusion.Form:Select.Option
                     option.value={site.nodeName}
                     attributes.selected={props.targetSite && site.nodeName.value == private.targetSiteNodeName}

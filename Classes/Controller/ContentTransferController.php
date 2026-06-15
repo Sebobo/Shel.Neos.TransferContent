@@ -25,9 +25,11 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Flow\I18n\Translator;
 use Neos\Flow\Mvc\Exception\StopActionException;
 use Neos\Flow\Security\Context as SecurityContext;
+use Neos\Flow\Security\Policy\Role;
 use Neos\Fusion\View\FusionView;
 use Neos\Neos\Controller\Module\AbstractModuleController;
 use Neos\Neos\Domain\Model\Site;
+use Neos\Neos\Domain\Model\UserId;
 use Neos\Neos\Domain\Repository\SiteRepository;
 use Neos\Neos\Domain\Service\UserService as DomainUserService;
 use Neos\Neos\Domain\Service\WorkspaceService;
@@ -62,10 +64,10 @@ class ContentTransferController extends AbstractModuleController
     #[Flow\Inject]
     protected readonly WorkspaceService $workspaceService;
 
-    private function getContentRepository(): ContentRepository
+    private function getContentRepository(?ContentRepositoryId $contentRepositoryId = null): ContentRepository
     {
         return $this->contentRepositoryRegistry->get(
-            ContentRepositoryId::fromString('default')
+            $contentRepositoryId ?? ContentRepositoryId::fromString('default')
         );
     }
 
@@ -76,26 +78,46 @@ class ContentTransferController extends AbstractModuleController
         ?Site $sourceSite = null,
         ?Site $targetSite = null,
         string $targetParentNodePath = '',
-        ?Workspace $targetWorkspace = null
+        ?Workspace $targetWorkspace = null,
+        ?string $sourceContentRepository = null,
+        ?string $targetContentRepository = null,
     ): void {
-        $sites = $this->siteRepository->findOnline();
-        $contentRepository = $this->getContentRepository();
+        $contentRepositoryIds = [];
+        foreach ($this->contentRepositoryRegistry->getContentRepositoryIds() as $crId) {
+            $contentRepositoryIds[] = $crId->value;
+        }
+
+        $defaultCr = $contentRepositoryIds[0] ?? 'default';
+        $sourceContentRepository = $sourceContentRepository ?: $defaultCr;
+        $targetContentRepository = $targetContentRepository ?: $defaultCr;
+
+        $allSites = $this->siteRepository->findOnline();
+
+        $sourceSites = [];
+        $targetSites = [];
+        foreach ($allSites as $site) {
+            $siteCr = $site->getConfiguration()->contentRepositoryId->value;
+            if ($siteCr === $sourceContentRepository) {
+                $sourceSites[] = $site;
+            }
+            if ($siteCr === $targetContentRepository) {
+                $targetSites[] = $site;
+            }
+        }
+
+        $contentRepository = $this->getContentRepository(
+            ContentRepositoryId::fromString($targetContentRepository)
+        );
         $contentRepositoryId = $contentRepository->id;
 
-        $roles = $this->securityContext->getRoles();
+        $roles = $this->securityContext->getRoles() ?? [];
         $userId = $this->domainUserService->getCurrentUser()?->getId();
 
-        $workspaces = $contentRepository->findWorkspaces()
-            ->filter(function (Workspace $workspace) use ($contentRepositoryId, $roles, $userId): bool {
-                $permissions = $this->authorizationService->getWorkspacePermissions(
-                    $contentRepositoryId,
-                    $workspace->workspaceName,
-                    $roles,
-                    $userId
-                );
-                return $permissions->write;
-            })
-            ->getIterator();
+        $workspaces = $this->getWritableWorkspaces(
+            $contentRepository,
+            $roles,
+            $userId
+        );
 
         // Build workspace labels with metadata titles
         $workspaceOptions = [];
@@ -111,7 +133,11 @@ class ContentTransferController extends AbstractModuleController
         }
 
         $this->view->assignMultiple([
-            'sites' => $sites,
+            'contentRepositoryIds' => $contentRepositoryIds,
+            'sourceContentRepository' => $sourceContentRepository,
+            'targetContentRepository' => $targetContentRepository,
+            'sourceSites' => $sourceSites,
+            'targetSites' => $targetSites,
             'workspaces' => $workspaceOptions,
             'sourceSite' => $sourceSite,
             'targetSite' => $targetSite,
@@ -133,15 +159,26 @@ class ContentTransferController extends AbstractModuleController
         string $sourceNodePath,
         string $targetParentNodePath,
         ?Workspace $targetWorkspace = null,
-        bool $moveNodesInstead = false
+        bool $moveNodesInstead = false,
+        ?string $sourceContentRepository = null,
+        ?string $targetContentRepository = null,
     ): void {
-        $contentRepository = $this->getContentRepository();
+        $sourceCrId = $sourceContentRepository
+            ? ContentRepositoryId::fromString($sourceContentRepository)
+            : $sourceSite->getConfiguration()->contentRepositoryId;
+        $targetCrId = $targetContentRepository
+            ? ContentRepositoryId::fromString($targetContentRepository)
+            : $targetSite->getConfiguration()->contentRepositoryId;
+
+        $sourceCr = $this->contentRepositoryRegistry->get($sourceCrId);
+        $targetCr = $this->contentRepositoryRegistry->get($targetCrId);
+
         $targetWorkspaceName = $targetWorkspace
             ? $targetWorkspace->workspaceName
             : WorkspaceName::forLive();
 
-        $sourceSubgraph = $this->getContentSubgraph($contentRepository, $targetWorkspaceName);
-        $targetSubgraph = $this->getContentSubgraph($contentRepository, $targetWorkspaceName);
+        $sourceSubgraph = $this->getContentSubgraph($sourceCr, $targetWorkspaceName);
+        $targetSubgraph = $this->getContentSubgraph($targetCr, $targetWorkspaceName);
 
         $sourceNode = $sourceSubgraph->findNodeById(
             NodeAggregateId::fromString($sourceNodePath)
@@ -150,12 +187,13 @@ class ContentTransferController extends AbstractModuleController
             NodeAggregateId::fromString($targetParentNodePath)
         );
 
-        $nodeTypeManager = $contentRepository->getNodeTypeManager();
+        $sourceNodeTypeManager = $sourceCr->getNodeTypeManager();
+        $targetNodeTypeManager = $targetCr->getNodeTypeManager();
         $sourceNodeType = $sourceNode?->nodeTypeName
-            ? $nodeTypeManager->getNodeType($sourceNode->nodeTypeName)
+            ? $sourceNodeTypeManager->getNodeType($sourceNode->nodeTypeName)
             : null;
         $targetNodeType = $targetParentNode?->nodeTypeName
-            ? $nodeTypeManager->getNodeType($targetParentNode->nodeTypeName)
+            ? $targetNodeTypeManager->getNodeType($targetParentNode->nodeTypeName)
             : null;
 
         if ($sourceNode === null) {
@@ -197,9 +235,17 @@ class ContentTransferController extends AbstractModuleController
                 Message::SEVERITY_ERROR
             );
         } elseif ($moveNodesInstead) {
-            $this->moveNode($contentRepository, $sourceNode, $targetParentNode, $targetWorkspaceName);
+            if (!$sourceCrId->equals($targetCrId)) {
+                $this->addFlashMessage(
+                    'Moving between CRs not implemented yet',
+                    'Unsupported action: Moving between CRs not implemented yet',
+                    Message::SEVERITY_ERROR
+                );
+            } else {
+                $this->moveNode($sourceCr, $sourceNode, $targetParentNode, $targetWorkspaceName);
+            }
         } else {
-            $this->copyNode($contentRepository, $sourceNode, $targetParentNode, $targetWorkspaceName);
+            $this->copyNode($sourceCr, $targetCr, $sourceNode, $targetParentNode, $targetWorkspaceName);
         }
 
         $this->redirect('index', null, null, [
@@ -207,6 +253,8 @@ class ContentTransferController extends AbstractModuleController
             'targetSite' => $targetSite,
             'targetParentNodePath' => $targetParentNodePath,
             'targetWorkspace' => $targetWorkspace,
+            'sourceContentRepository' => $sourceContentRepository,
+            'targetContentRepository' => $targetContentRepository,
         ]);
     }
 
@@ -246,16 +294,17 @@ class ContentTransferController extends AbstractModuleController
      * recreating node aggregates in the target location.
      */
     private function copyNode(
-        ContentRepository $contentRepository,
+        ContentRepository $sourceCr,
+        ContentRepository $targetCr,
         Node $sourceNode,
         Node $targetParentNode,
         WorkspaceName $targetWorkspaceName
     ): void {
         try {
-            $sourceSubgraph = $this->getContentSubgraphFromNode($contentRepository, $sourceNode);
+            $sourceSubgraph = $this->getContentSubgraphFromNode($sourceCr, $sourceNode);
 
             $this->copyNodeRecursive(
-                contentRepository: $contentRepository,
+                contentRepository: $targetCr,
                 sourceSubgraph: $sourceSubgraph,
                 sourceNode: $sourceNode,
                 targetParentNodeAggregateId: $targetParentNode->aggregateId,
@@ -354,5 +403,27 @@ class ContentTransferController extends AbstractModuleController
             // Ignore exception
         }
         return $translation ?? $id;
+    }
+
+    /**
+     * @param Role[] $roles
+     * @throws \Exception
+     */
+    protected function getWritableWorkspaces(
+        ContentRepository $contentRepository,
+        array $roles,
+        UserId $userId
+    ): iterable {
+        return $contentRepository->findWorkspaces()
+            ->filter(function (Workspace $workspace) use ($contentRepository, $roles, $userId): bool {
+                $permissions = $this->authorizationService->getWorkspacePermissions(
+                    $contentRepository->id,
+                    $workspace->workspaceName,
+                    $roles,
+                    $userId
+                );
+                return $permissions->write;
+            })
+            ->getIterator();
     }
 }
