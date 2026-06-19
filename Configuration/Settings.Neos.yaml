@@ -24,4 +24,5 @@ Neos:
                 'ContentTransfer': 'resource://Shel.Neos.TransferContent/Public/ContentTransfer.js'
                 'ContentTransferTree': 'resource://Shel.Neos.TransferContent/Public/ContentTransferTree.js'
               styleSheets:
+                'ContentTransfer': 'resource://Shel.Neos.TransferContent/Public/ContentTransfer.css'
                 'ContentTransferTree': 'resource://Shel.Neos.TransferContent/Public/ContentTransferTree.css'

@@ -1,4 +1,10 @@
 .neos {
+    #contentTransferForm {
+        h4 {
+            margin-bottom: 1em;
+        }
+    }
+
     .content-transfer-tree {
         margin-bottom: 16px;
     }
@@ -68,8 +74,8 @@
     }
 
     .ct-selection-info {
-        margin-top: 4px;
-        font-size: 12px;
+        margin-top: 1em;
+        font-size: 80%;
         color: #adadad;
         font-style: italic;
     }
