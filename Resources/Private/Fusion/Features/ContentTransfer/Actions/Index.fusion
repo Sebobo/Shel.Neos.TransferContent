@@ -178,6 +178,10 @@ prototype(Shel.Neos.TransferContent:View.ContentTransfer.index) < prototype(Neos
                             data-label={private.i18n.id('sourceDocument').translate()}
                         >
                             <Neos.Fusion.Form:Hidden
+                                field.name="sourceContentRepository"
+                                field.value={props.sourceContentRepository.value}
+                            />
+                            <Neos.Fusion.Form:Hidden
                                 field.name="sourceNodePath"
                                 attributes.data-tree-input="sourceNodePath"
                             />
@@ -208,6 +212,10 @@ prototype(Shel.Neos.TransferContent:View.ContentTransfer.index) < prototype(Neos
                             data-workspaces={Json.stringify(props.targetWorkspaces)}
                             data-label={private.i18n.id('targetDocument').translate()}
                         >
+                            <Neos.Fusion.Form:Hidden
+                                field.name="targetContentRepository"
+                                field.value={props.targetContentRepository.value}
+                            />
                             <Neos.Fusion.Form:Hidden
                                 field.name="targetParentNodePath"
                                 attributes.data-tree-input="targetParentNodePath"

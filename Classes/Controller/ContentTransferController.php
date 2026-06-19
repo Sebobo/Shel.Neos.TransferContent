@@ -26,8 +26,10 @@ use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Error\Messages\Message;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Http\Exception;
 use Neos\Flow\I18n\Translator;
 use Neos\Flow\Mvc\Exception\StopActionException;
+use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Flow\Security\Context as SecurityContext;
 use Neos\Fusion\View\FusionView;
 use Neos\Neos\Controller\Module\AbstractModuleController;
@@ -146,9 +148,6 @@ class ContentTransferController extends AbstractModuleController
         $parsedDimValues = json_decode($dimensionValues, true, 512, JSON_THROW_ON_ERROR) ?: [];
         $dsp = DimensionSpacePoint::fromArray($parsedDimValues);
         $subgraph = $cr->getContentSubgraph($workspaceName, $dsp);
-        //\Neos\Flow\var_dump($dsp);
-        //die('hard');
-
         $nodeTypeFilter = $this->getNodeTypeFilterForCr($contentRepositoryId);
 
         if ($parentNodeId === null) {
@@ -190,9 +189,11 @@ class ContentTransferController extends AbstractModuleController
     }
 
     /**
+     * @throws AccessDenied
      * @throws StopActionException
-     * @Flow\Validate(argumentName="sourceNodePath", type="\Neos\Flow\Validation\Validator\NotEmptyValidator")
-     * @Flow\Validate(argumentName="targetParentNodePath", type="\Neos\Flow\Validation\Validator\NotEmptyValidator")
+     * @throws \JsonException
+     * @throws Exception
+     * @throws MissingActionNameException
      */
     public function copyNodeAction(
         string $sourceNodePath = '',
@@ -289,16 +290,24 @@ class ContentTransferController extends AbstractModuleController
                 );
             } else {
                 $this->moveNode($sourceCr, $sourceNode, $targetParentNode, $targetWorkspace);
+                $this->addFlashMessage(
+                    $this->translate('message.moveStarted'),
+                    'Success',
+                );
             }
         } else {
             $this->copyNode($sourceCr, $targetCr, $sourceNode, $targetParentNode, $targetWorkspace);
+            $this->addFlashMessage(
+                $this->translate('message.copyStarted'),
+                'Success',
+            );
         }
 
         $this->redirect('index', null, null, [
-            'sourceContentRepository' => $sourceContentRepository,
-            'targetContentRepository' => $targetContentRepository,
-            'sourceWorkspace' => $sourceWorkspace,
-            'targetWorkspace' => $targetWorkspace,
+            'sourceContentRepository' => $sourceContentRepository->value,
+            'targetContentRepository' => $targetContentRepository->value,
+            'sourceWorkspace' => $sourceWorkspace->value,
+            'targetWorkspace' => $targetWorkspace->value,
             'sourceDimensionValues' => $sourceDimensionValues,
             'targetDimensionValues' => $targetDimensionValues,
         ]);

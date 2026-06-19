@@ -80,8 +80,14 @@
             <trans-unit id="error.cannotMoveAcrossCr" xml:space="preserve">
                 <source>Cannot move nodes across different content repositories</source>
             </trans-unit>
+            <trans-unit id="message.copyStarted" xml:space="preserve">
+                <source>The copy action has been started</source>
+            </trans-unit>
             <trans-unit id="message.copied" xml:space="preserve">
                 <source>The node was copied</source>
+            </trans-unit>
+            <trans-unit id="message.moveStarted" xml:space="preserve">
+                <source>The move action has been started</source>
             </trans-unit>
             <trans-unit id="message.moved" xml:space="preserve">
                 <source>The node was moved</source>
