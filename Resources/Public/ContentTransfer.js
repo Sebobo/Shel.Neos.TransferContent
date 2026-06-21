@@ -1,5 +1,18 @@
 ;(function () {
+  function renderFlashMessages() {
+    var messages = window.flashMessagesData;
+    if (messages && messages.length) {
+      messages.forEach(function(m) {
+        if (window.NeosCMS && window.NeosCMS.Notification && window.NeosCMS.Notification[m.severity]) {
+          window.NeosCMS.Notification[m.severity](m.title, m.message || '');
+        }
+      });
+    }
+  }
+
   function init() {
+    renderFlashMessages();
+
     document.querySelectorAll('[data-auto-submit]').forEach(function(el) {
       el.addEventListener('change', function() {
         if (this.matches('.ct-dimension-select')) {

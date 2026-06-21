@@ -118,6 +118,15 @@ class ContentTransferController extends AbstractModuleController
             }
         }
 
+        $flashMessages = $this->controllerContext->getFlashMessageContainer()->getMessagesAndFlush();
+        $flashMessagesData = array_map(static function (Message $message): array {
+            return [
+                'title' => $message->getTitle(),
+                'message' => $message->getMessage(),
+                'severity' => strtolower($message->getSeverity()),
+            ];
+        }, $flashMessages);
+
         $this->view->assignMultiple([
             'contentRepositoryIds' => $contentRepositoryIds,
             'sourceContentRepository' => $sourceContentRepository,
@@ -131,7 +140,7 @@ class ContentTransferController extends AbstractModuleController
             'sourceDimensionValues' => $parsedSourceDimValues,
             'targetDimensionValues' => $parsedTargetDimValues,
             'allowNodeMoving' => $this->settings['allowNodeMoving'],
-            'flashMessages' => $this->controllerContext->getFlashMessageContainer()->getMessagesAndFlush(),
+            'flashMessagesData' => $flashMessagesData,
         ]);
     }
 

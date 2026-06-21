@@ -11,7 +11,7 @@ prototype(Shel.Neos.TransferContent:View.ContentTransfer.index) < prototype(Neos
     sourceDimensionValues = ${sourceDimensionValues}
     targetDimensionValues = ${targetDimensionValues}
     allowNodeMoving = ${allowNodeMoving}
-    flashMessages = ${flashMessages}
+    flashMessagesData = ${flashMessagesData}
 
     prototype(Neos.Fusion.Form:LabelRenderer) {
         translationPackage = 'Shel.Neos.TransferContent'
@@ -34,7 +34,9 @@ prototype(Shel.Neos.TransferContent:View.ContentTransfer.index) < prototype(Neos
     }
 
     renderer = afx`
-        <Shel.Neos.TransferContent:Component.FlashMessages flashMessages={props.flashMessages}/>
+        <script @if.hasFlashMessages={Array.length(props.flashMessagesData) > 0}>
+            window.flashMessagesData = {Json.stringify(props.flashMessagesData)};
+        </script>
 
         <Neos.Fusion.Form:Form
             form.target.action="index"
