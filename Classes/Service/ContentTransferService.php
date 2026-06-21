@@ -107,10 +107,7 @@ class ContentTransferService
                 if (!is_array($valConfig)) {
                     continue;
                 }
-                $values[] = [
-                    'value' => $valId,
-                    'label' => $valConfig['label'] ?? $valId,
-                ];
+                array_push($values, ...$this->flattenDimensionValues($valId, $valConfig));
             }
 
             $result[] = [
@@ -119,6 +116,28 @@ class ContentTransferService
                 'values' => $values,
             ];
         }
+        return $result;
+    }
+
+    private function flattenDimensionValues(string $valueId, array $config, string $breadcrumb = ''): array
+    {
+        $label = $config['label'] ?? $valueId;
+        $fullLabel = $breadcrumb !== '' ? $breadcrumb . ' → ' . $label : $label;
+
+        $result = [
+            [
+                'value' => $valueId,
+                'label' => $fullLabel,
+            ],
+        ];
+
+        foreach ($config['specializations'] ?? [] as $specId => $specConfig) {
+            if (!is_array($specConfig)) {
+                continue;
+            }
+            array_push($result, ...$this->flattenDimensionValues($specId, $specConfig, $fullLabel));
+        }
+
         return $result;
     }
 
