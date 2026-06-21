@@ -7,6 +7,7 @@ namespace Shel\Neos\TransferContent\Service;
 use Neos\ContentRepository\Core\ContentRepository;
 use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
 use Neos\ContentRepository\Core\DimensionSpace\OriginDimensionSpacePoint;
+use Neos\ContentRepository\Core\DimensionSpace\OriginDimensionSpacePointSet;
 use Neos\ContentRepository\Core\Feature\NodeCreation\Command\CreateNodeAggregateWithNode;
 use Neos\ContentRepository\Core\Feature\NodeModification\Command\SetNodeProperties;
 use Neos\ContentRepository\Core\Feature\NodeModification\Dto\PropertyValuesToWrite;
@@ -28,6 +29,11 @@ use Neos\Neos\Domain\NodeLabel\NodeLabelGeneratorInterface;
 use Neos\Neos\Domain\Service\UserService as DomainUserService;
 use Neos\Neos\Domain\Service\WorkspaceService;
 use Neos\Neos\Security\Authorization\ContentRepositoryAuthorizationService;
+use Shel\Neos\TransferContent\Dto\CopyResult;
+use Shel\Neos\TransferContent\Dto\DimensionConfigDto;
+use Shel\Neos\TransferContent\Dto\DimensionValueDto;
+use Shel\Neos\TransferContent\Dto\TreeNodeDto;
+use Shel\Neos\TransferContent\Dto\WorkspaceDto;
 
 #[Flow\Scope('singleton')]
 class ContentTransferService
@@ -50,6 +56,9 @@ class ContentTransferService
         return $this->contentRepositoryRegistry->get($crId);
     }
 
+    /**
+     * @return list<string>
+     */
     public function getContentRepositoryIds(): array
     {
         $ids = [];
@@ -59,6 +68,9 @@ class ContentTransferService
         return $ids;
     }
 
+    /**
+     * @return list<WorkspaceDto>
+     */
     public function getWorkspacesForCr(ContentRepositoryId $crId): array
     {
         $contentRepository = $this->getContentRepository($crId);
@@ -83,14 +95,17 @@ class ContentTransferService
                 $crId,
                 $workspace->workspaceName
             );
-            $result[] = [
-                'workspace' => $workspace->workspaceName,
-                'title' => $metadata->title->value,
-            ];
+            $result[] = new WorkspaceDto(
+                workspaceName: $workspace->workspaceName,
+                title: $metadata->title->value,
+            );
         }
         return $result;
     }
 
+    /**
+     * @return list<DimensionConfigDto>
+     */
     public function buildDimensionConfig(ContentRepositoryId $crId): array
     {
         $crConfig = $this->crSettings[$crId->value] ?? [];
@@ -110,25 +125,28 @@ class ContentTransferService
                 array_push($values, ...$this->flattenDimensionValues($valId, $valConfig));
             }
 
-            $result[] = [
-                'id' => $dimId,
-                'label' => $dimConfig['label'] ?? $dimId,
-                'values' => $values,
-            ];
+            $result[] = new DimensionConfigDto(
+                id: $dimId,
+                label: $dimConfig['label'] ?? $dimId,
+                values: $values,
+            );
         }
         return $result;
     }
 
+    /**
+     * @return list<DimensionValueDto>
+     */
     private function flattenDimensionValues(string $valueId, array $config, string $breadcrumb = ''): array
     {
         $label = $config['label'] ?? $valueId;
         $fullLabel = $breadcrumb !== '' ? $breadcrumb . ' → ' . $label : $label;
 
         $result = [
-            [
-                'value' => $valueId,
-                'label' => $fullLabel,
-            ],
+            new DimensionValueDto(
+                value: $valueId,
+                label: $fullLabel,
+            ),
         ];
 
         foreach ($config['specializations'] ?? [] as $specId => $specConfig) {
@@ -141,12 +159,72 @@ class ContentTransferService
         return $result;
     }
 
+    /**
+     * @return array<string, list<string>>
+     */
+    private function getDimensionValuesMap(ContentRepositoryId $crId): array
+    {
+        $crConfig = $this->crSettings[$crId->value] ?? [];
+        $contentDimensions = $crConfig['contentDimensions'] ?? [];
+
+        $map = [];
+        foreach ($contentDimensions as $dimId => $dimConfig) {
+            if (!is_array($dimConfig)) {
+                continue;
+            }
+            $values = [];
+            $this->collectDimensionValues($dimConfig['values'] ?? [], $values);
+            $map[$dimId] = $values;
+        }
+        return $map;
+    }
+
+    private function collectDimensionValues(array $valuesConfig, array &$values): void
+    {
+        foreach ($valuesConfig as $valId => $valConfig) {
+            if (!is_array($valConfig)) {
+                continue;
+            }
+            $values[] = $valId;
+            $this->collectDimensionValues($valConfig['specializations'] ?? [], $values);
+        }
+    }
+
+    /**
+     * @return list<OriginDimensionSpacePoint>
+     */
+    private function filterCompatibleOriginDimensionSpacePoints(
+        OriginDimensionSpacePointSet $odspSet,
+        ContentRepository $targetCr,
+    ): array {
+        $targetDimValues = $this->getDimensionValuesMap($targetCr->id);
+
+        $compatible = [];
+        foreach ($odspSet as $odsp) {
+            $allMatch = true;
+            foreach ($odsp->coordinates as $dimName => $dimValue) {
+                $targetValues = $targetDimValues[$dimName] ?? [];
+                if (!in_array($dimValue, $targetValues, true)) {
+                    $allMatch = false;
+                    break;
+                }
+            }
+            if ($allMatch) {
+                $compatible[] = $odsp;
+            }
+        }
+        return $compatible;
+    }
+
     public function getNodeTypeFilterForCr(ContentRepositoryId $crId): string
     {
         $filters = $this->crSettings['nodeTypeFilters'] ?? ['default' => 'Neos.Neos:Document'];
         return $filters[$crId->value] ?? $filters['default'] ?? 'Neos.Neos:Document';
     }
 
+    /**
+     * @return list<TreeNodeDto>
+     */
     public function getTreeChildrenData(
         ContentRepositoryId $contentRepositoryId,
         WorkspaceName $workspaceName,
@@ -182,12 +260,12 @@ class ContentTransferService
                     CountChildNodesFilter::create(nodeTypes: $nodeTypeFilter)
                 ) > 0;
 
-            $result[] = [
-                'nodeAggregateId' => $child->aggregateId->value,
-                'label' => $label,
-                'nodeType' => $child->nodeTypeName->value,
-                'hasChildren' => $hasChildren,
-            ];
+            $result[] = new TreeNodeDto(
+                nodeAggregateId: $child->aggregateId,
+                label: $label,
+                nodeTypeName: $child->nodeTypeName,
+                hasChildren: $hasChildren,
+            );
         }
 
         return $result;
@@ -215,19 +293,49 @@ class ContentTransferService
         ContentRepository $targetCr,
         Node $sourceNode,
         Node $targetParentNode,
-    ): void {
-        $sourceSubgraph = $sourceCr->getContentSubgraph(
-            $sourceNode->workspaceName,
-            $sourceNode->dimensionSpacePoint
+    ): CopyResult {
+        $sourceContentGraph = $sourceCr->getContentGraph($sourceNode->workspaceName);
+        $sourceAggregate = $sourceContentGraph->findNodeAggregateById($sourceNode->aggregateId);
+
+        if ($sourceAggregate === null) {
+            return new CopyResult(nodeCount: 0, variantCount: 0);
+        }
+
+        $compatibleODSPs = $this->filterCompatibleOriginDimensionSpacePoints(
+            $sourceAggregate->occupiedDimensionSpacePoints,
+            $targetCr,
         );
 
-        $this->copyNodeRecursive(
-            contentRepository: $targetCr,
-            sourceSubgraph: $sourceSubgraph,
-            sourceNode: $sourceNode,
-            targetParentNodeAggregateId: $targetParentNode->aggregateId,
-            targetWorkspaceName: $targetParentNode->workspaceName,
-            sourceOriginDimensionSpacePoint: $targetParentNode->originDimensionSpacePoint,
+        $nodeCount = 0;
+        foreach ($compatibleODSPs as $odsp) {
+            $dsp = $odsp->toDimensionSpacePoint();
+            $sourceVariantSubgraph = $sourceCr->getContentSubgraph($sourceNode->workspaceName, $dsp);
+            $sourceVariant = $sourceVariantSubgraph->findNodeById($sourceNode->aggregateId);
+
+            if ($sourceVariant === null) {
+                continue;
+            }
+
+            $targetVariantSubgraph = $targetCr->getContentSubgraph($targetParentNode->workspaceName, $dsp);
+            $targetParentVariant = $targetVariantSubgraph->findNodeById($targetParentNode->aggregateId);
+
+            if ($targetParentVariant === null) {
+                continue;
+            }
+
+            $nodeCount += $this->copyNodeRecursive(
+                contentRepository: $targetCr,
+                sourceSubgraph: $sourceVariantSubgraph,
+                sourceNode: $sourceVariant,
+                targetParentNodeAggregateId: $targetParentVariant->aggregateId,
+                targetWorkspaceName: $targetParentNode->workspaceName,
+                sourceOriginDimensionSpacePoint: $targetParentVariant->originDimensionSpacePoint,
+            );
+        }
+
+        return new CopyResult(
+            nodeCount: $nodeCount,
+            variantCount: count($compatibleODSPs),
         );
     }
 
@@ -238,7 +346,9 @@ class ContentTransferService
         NodeAggregateId $targetParentNodeAggregateId,
         WorkspaceName $targetWorkspaceName,
         OriginDimensionSpacePoint $sourceOriginDimensionSpacePoint,
-    ): void {
+    ): int {
+        $count = 0;
+
         if ($sourceNode->classification->isTethered()) {
             $targetSubgraph = $contentRepository->getContentSubgraph(
                 $targetWorkspaceName,
@@ -250,7 +360,7 @@ class ContentTransferService
             );
 
             if ($existingNode === null) {
-                return;
+                return 0;
             }
 
             $propertyValues = [];
@@ -292,13 +402,15 @@ class ContentTransferService
             $parentNodeAggregateId = $newNodeAggregateId;
         }
 
+        $count++;
+
         $childNodes = $sourceSubgraph->findChildNodes(
             $sourceNode->aggregateId,
             FindChildNodesFilter::create()
         );
 
         foreach ($childNodes as $childNode) {
-            $this->copyNodeRecursive(
+            $count += $this->copyNodeRecursive(
                 contentRepository: $contentRepository,
                 sourceSubgraph: $sourceSubgraph,
                 sourceNode: $childNode,
@@ -307,5 +419,7 @@ class ContentTransferService
                 sourceOriginDimensionSpacePoint: $sourceOriginDimensionSpacePoint,
             );
         }
+
+        return $count;
     }
 }

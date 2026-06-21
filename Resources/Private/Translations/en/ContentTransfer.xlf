@@ -81,7 +81,7 @@
                 <source>Cannot move nodes across different content repositories</source>
             </trans-unit>
             <trans-unit id="message.copied" xml:space="preserve">
-                <source>The node was copied</source>
+                <source>Copied {0} node(s) in {1} variant(s)</source>
             </trans-unit>
             <trans-unit id="message.moved" xml:space="preserve">
                 <source>The node was moved</source>

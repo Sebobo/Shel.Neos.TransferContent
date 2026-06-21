@@ -12,7 +12,7 @@
      */
 
     /**
-     * @typedef {{ workspace: string, title: string }} WorkspaceOption
+     * @typedef {{ workspaceName: string, title: string }} WorkspaceOption
      */
 
     /**
@@ -20,17 +20,17 @@
      */
     const initTree = (container) => {
         /** @type {string} */
-        const contentRepository = container.getAttribute('data-content-repository') ?? '';
+        const contentRepository = container.dataset.contentRepository ?? '';
         /** @type {string} */
-        const inputName = container.getAttribute('data-input-name') ?? '';
+        const inputName = container.dataset.inputName ?? '';
         /** @type {string} */
-        let workspaceName = container.getAttribute('data-workspace-name') || 'live';
+        let workspaceName = container.dataset.workspaceName || 'live';
         /** @type {string} */
-        const workspacesRaw = container.getAttribute('data-workspaces') ?? '[]';
+        const workspacesRaw = container.dataset.workspaces ?? '[]';
         /** @type {string} */
-        const dimensionValues = container.getAttribute('data-dimension-values') || '{}';
+        const dimensionValues = container.dataset.dimensionValues || '{}';
         /** @type {string} */
-        const label = container.getAttribute('data-label') ?? '';
+        const label = container.dataset.label ?? '';
 
         /** @type {HTMLInputElement | null} */
         const hiddenInput = container.querySelector(
@@ -226,9 +226,9 @@
             select.className = 'ct-workspace-selector neos-span12';
             workspaces.forEach((ws) => {
                 const opt = document.createElement('option');
-                opt.value = ws.workspace;
+                opt.value = ws.workspaceName;
                 opt.textContent = ws.title;
-                if (ws.workspace === workspaceName) {
+                if (ws.workspaceName === workspaceName) {
                     opt.selected = true;
                 }
                 select.appendChild(opt);

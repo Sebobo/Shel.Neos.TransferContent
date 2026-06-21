@@ -62,20 +62,20 @@ class ContentTransferController extends AbstractModuleController
 
         if (!empty($sourceDimensions)) {
             foreach ($sourceDimensions as $dim) {
-                if (!array_key_exists($dim['id'], $parsedSourceDimValues)) {
-                    $firstValue = $dim['values'][0]['value'] ?? null;
+                if (!array_key_exists($dim->id, $parsedSourceDimValues)) {
+                    $firstValue = $dim->values[0]->value ?? null;
                     if ($firstValue !== null) {
-                        $parsedSourceDimValues[$dim['id']] = $firstValue;
+                        $parsedSourceDimValues[$dim->id] = $firstValue;
                     }
                 }
             }
         }
         if (!empty($targetDimensions)) {
             foreach ($targetDimensions as $dim) {
-                if (!array_key_exists($dim['id'], $parsedTargetDimValues)) {
-                    $firstValue = $dim['values'][0]['value'] ?? null;
+                if (!array_key_exists($dim->id, $parsedTargetDimValues)) {
+                    $firstValue = $dim->values[0]->value ?? null;
                     if ($firstValue !== null) {
-                        $parsedTargetDimValues[$dim['id']] = $firstValue;
+                        $parsedTargetDimValues[$dim->id] = $firstValue;
                     }
                 }
             }
@@ -250,14 +250,17 @@ class ContentTransferController extends AbstractModuleController
             }
         } else {
             try {
-                $this->contentTransferService->copyNode(
+                $result = $this->contentTransferService->copyNode(
                     $sourceCr,
                     $targetCr,
                     $sourceNode,
                     $targetParentNode,
                 );
                 $this->addFlashMessage(
-                    $this->translate('message.copied'),
+                    $this->translate('message.copied', [
+                        (string)$result->nodeCount,
+                        (string)$result->variantCount,
+                    ]),
                     'Success'
                 );
             } catch (\Exception $e) {

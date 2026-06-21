@@ -106,8 +106,8 @@
                 <target>Knoten können nicht zwischen verschiedenen Content-Repositories verschoben werden</target>
             </trans-unit>
             <trans-unit id="message.copied" xml:space="preserve">
-                <source>The node was copied</source>
-                <target>Der Inhalt wurde kopiert</target>
+                <source>Copied {0} node(s) in {1} variant(s)</source>
+                <target>{0} Knoten in {1} Variante(n) kopiert</target>
             </trans-unit>
             <trans-unit id="message.moved" xml:space="preserve">
                 <source>The node was moved</source>
