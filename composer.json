@@ -20,12 +20,15 @@
   ],
   "require": {
     "php": ">=8.3",
-    "neos/neos": "^9.0"
+    "neos/neos": "^9.1"
   },
   "autoload": {
     "psr-4": {
       "Shel\\Neos\\TransferContent\\": "Classes"
     }
+  },
+  "scripts": {
+    "phpstan": "phpstan analyse -c phpstan.neon --level=max"
   },
   "extra": {
     "neos": {

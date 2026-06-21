@@ -28,10 +28,10 @@ class ContentTransferController extends AbstractModuleController
     protected $defaultViewObjectName = FusionView::class;
 
     #[Flow\Inject]
-    protected readonly Translator $translator;
+    protected Translator $translator;
 
     #[Flow\Inject]
-    protected readonly ContentTransferService $contentTransferService;
+    protected ContentTransferService $contentTransferService;
 
     /**
      * @throws \JsonException
@@ -57,8 +57,10 @@ class ContentTransferController extends AbstractModuleController
         $sourceDimensions = $this->contentTransferService->buildDimensionConfig($sourceContentRepository);
         $targetDimensions = $this->contentTransferService->buildDimensionConfig($targetContentRepository);
 
-        $parsedSourceDimValues = json_decode($sourceDimensionValues, true, 512, JSON_THROW_ON_ERROR) ?: [];
-        $parsedTargetDimValues = json_decode($targetDimensionValues, true, 512, JSON_THROW_ON_ERROR) ?: [];
+        $decodedSource = json_decode($sourceDimensionValues ?? '{}', true, 512, JSON_THROW_ON_ERROR);
+        $parsedSourceDimValues = is_array($decodedSource) ? $decodedSource : [];
+        $decodedTarget = json_decode($targetDimensionValues ?? '{}', true, 512, JSON_THROW_ON_ERROR);
+        $parsedTargetDimValues = is_array($decodedTarget) ? $decodedTarget : [];
 
         if (!empty($sourceDimensions)) {
             foreach ($sourceDimensions as $dim) {
@@ -112,10 +114,11 @@ class ContentTransferController extends AbstractModuleController
      */
     public function treeChildrenAction(
         ContentRepositoryId $contentRepositoryId,
-        WorkspaceName $workspaceName = null,
+        ?WorkspaceName $workspaceName = null,
         ?NodeAggregateId $parentNodeId = null,
         string $dimensionValues = '{}',
     ): ResponseInterface {
+        $workspaceName = $workspaceName ?? WorkspaceName::forLive();
         $children = $this->contentTransferService->getTreeChildrenData(
             $contentRepositoryId,
             $workspaceName,
@@ -157,8 +160,24 @@ class ContentTransferController extends AbstractModuleController
         $sourceWorkspace = $sourceWorkspace ?: WorkspaceName::forLive();
         $targetWorkspace = $targetWorkspace ?: WorkspaceName::forLive();
 
-        $parsedSourceDim = json_decode($sourceDimensionValues, true, 512, JSON_THROW_ON_ERROR) ?: [];
-        $parsedTargetDim = json_decode($targetDimensionValues, true, 512, JSON_THROW_ON_ERROR) ?: [];
+        $decodedSourceDim = json_decode($sourceDimensionValues, true, 512, JSON_THROW_ON_ERROR);
+        $parsedSourceDim = [];
+        if (is_array($decodedSourceDim)) {
+            foreach ($decodedSourceDim as $key => $value) {
+                if (is_string($key) && is_string($value)) {
+                    $parsedSourceDim[$key] = $value;
+                }
+            }
+        }
+        $decodedTargetDim = json_decode($targetDimensionValues, true, 512, JSON_THROW_ON_ERROR);
+        $parsedTargetDim = [];
+        if (is_array($decodedTargetDim)) {
+            foreach ($decodedTargetDim as $key => $value) {
+                if (is_string($key) && is_string($value)) {
+                    $parsedTargetDim[$key] = $value;
+                }
+            }
+        }
 
         $sourceSubgraph = $sourceCr->getContentSubgraph(
             $sourceWorkspace,
@@ -282,6 +301,9 @@ class ContentTransferController extends AbstractModuleController
         ]);
     }
 
+    /**
+     * @param array<mixed> $arguments
+     */
     protected function translate(string $id, array $arguments = []): string
     {
         try {

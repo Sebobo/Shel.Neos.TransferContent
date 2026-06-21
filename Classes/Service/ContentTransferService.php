@@ -38,6 +38,9 @@ use Shel\Neos\TransferContent\Dto\WorkspaceDto;
 #[Flow\Scope('singleton')]
 class ContentTransferService
 {
+    /**
+     * @var array<string, mixed>
+     */
     #[Flow\InjectConfiguration(path: 'contentRepositories', package: 'Neos.ContentRepositoryRegistry')]
     protected array $crSettings;
 
@@ -109,25 +112,51 @@ class ContentTransferService
     public function buildDimensionConfig(ContentRepositoryId $crId): array
     {
         $crConfig = $this->crSettings[$crId->value] ?? [];
+        if (!is_array($crConfig)) {
+            $crConfig = [];
+        }
         $contentDimensions = $crConfig['contentDimensions'] ?? [];
+        if (!is_array($contentDimensions)) {
+            $contentDimensions = [];
+        }
 
         $result = [];
         foreach ($contentDimensions as $dimId => $dimConfig) {
             if (!is_array($dimConfig)) {
                 continue;
             }
+            if (!is_string($dimId)) {
+                continue;
+            }
 
             $values = [];
-            foreach ($dimConfig['values'] ?? [] as $valId => $valConfig) {
-                if (!is_array($valConfig)) {
-                    continue;
+            $dimValues = $dimConfig['values'] ?? [];
+            if (is_array($dimValues)) {
+                foreach ($dimValues as $valId => $valConfig) {
+                    if (!is_array($valConfig)) {
+                        continue;
+                    }
+                    if (!is_string($valId)) {
+                        continue;
+                    }
+                    $typedConfig = [];
+                    foreach ($valConfig as $k => $v) {
+                        if (is_string($k)) {
+                            $typedConfig[$k] = $v;
+                        }
+                    }
+                    array_push($values, ...$this->flattenDimensionValues($valId, $typedConfig));
                 }
-                array_push($values, ...$this->flattenDimensionValues($valId, $valConfig));
+            }
+
+            $dimLabel = $dimConfig['label'] ?? $dimId;
+            if (!is_string($dimLabel)) {
+                $dimLabel = $dimId;
             }
 
             $result[] = new DimensionConfigDto(
                 id: $dimId,
-                label: $dimConfig['label'] ?? $dimId,
+                label: $dimLabel,
                 values: $values,
             );
         }
@@ -135,11 +164,15 @@ class ContentTransferService
     }
 
     /**
+     * @param array<string, mixed> $config
      * @return list<DimensionValueDto>
      */
     private function flattenDimensionValues(string $valueId, array $config, string $breadcrumb = ''): array
     {
         $label = $config['label'] ?? $valueId;
+        if (!is_string($label)) {
+            $label = $valueId;
+        }
         $fullLabel = $breadcrumb !== '' ? $breadcrumb . ' → ' . $label : $label;
 
         $result = [
@@ -149,11 +182,23 @@ class ContentTransferService
             ),
         ];
 
-        foreach ($config['specializations'] ?? [] as $specId => $specConfig) {
-            if (!is_array($specConfig)) {
-                continue;
+        $specializations = $config['specializations'] ?? [];
+        if (is_array($specializations)) {
+            foreach ($specializations as $specId => $specConfig) {
+                if (!is_array($specConfig)) {
+                    continue;
+                }
+                if (!is_string($specId)) {
+                    continue;
+                }
+                $typedSpecConfig = [];
+                foreach ($specConfig as $k => $v) {
+                    if (is_string($k)) {
+                        $typedSpecConfig[$k] = $v;
+                    }
+                }
+                array_push($result, ...$this->flattenDimensionValues($specId, $typedSpecConfig, $fullLabel));
             }
-            array_push($result, ...$this->flattenDimensionValues($specId, $specConfig, $fullLabel));
         }
 
         return $result;
@@ -165,28 +210,62 @@ class ContentTransferService
     private function getDimensionValuesMap(ContentRepositoryId $crId): array
     {
         $crConfig = $this->crSettings[$crId->value] ?? [];
+        if (!is_array($crConfig)) {
+            $crConfig = [];
+        }
         $contentDimensions = $crConfig['contentDimensions'] ?? [];
+        if (!is_array($contentDimensions)) {
+            $contentDimensions = [];
+        }
 
         $map = [];
         foreach ($contentDimensions as $dimId => $dimConfig) {
             if (!is_array($dimConfig)) {
                 continue;
             }
+            if (!is_string($dimId)) {
+                continue;
+            }
             $values = [];
-            $this->collectDimensionValues($dimConfig['values'] ?? [], $values);
+            $dimValues = $dimConfig['values'] ?? [];
+            if (is_array($dimValues)) {
+                $typedDimValues = [];
+                foreach ($dimValues as $k => $v) {
+                    if (is_string($k)) {
+                        $typedDimValues[$k] = $v;
+                    }
+                }
+                $this->collectDimensionValues($typedDimValues, $values);
+            }
             $map[$dimId] = $values;
         }
         return $map;
     }
 
+    /**
+     * @param array<mixed> $valuesConfig
+     * @param list<string> &$values
+     */
     private function collectDimensionValues(array $valuesConfig, array &$values): void
     {
         foreach ($valuesConfig as $valId => $valConfig) {
+            if (!is_string($valId)) {
+                continue;
+            }
             if (!is_array($valConfig)) {
                 continue;
             }
             $values[] = $valId;
-            $this->collectDimensionValues($valConfig['specializations'] ?? [], $values);
+            $specializations = $valConfig['specializations'] ?? [];
+            if (is_array($specializations)) {
+                $typedSpecs = [];
+                foreach ($specializations as $k => $v) {
+                    if (is_string($k)) {
+                        $typedSpecs[$k] = $v;
+                    }
+                }
+                $this->collectDimensionValues($typedSpecs, $values);
+            }
         }
     }
 
@@ -219,7 +298,14 @@ class ContentTransferService
     public function getNodeTypeFilterForCr(ContentRepositoryId $crId): string
     {
         $filters = $this->crSettings['nodeTypeFilters'] ?? ['default' => 'Neos.Neos:Document'];
-        return $filters[$crId->value] ?? $filters['default'] ?? 'Neos.Neos:Document';
+        if (!is_array($filters)) {
+            return 'Neos.Neos:Document';
+        }
+        $filter = $filters[$crId->value] ?? $filters['default'] ?? 'Neos.Neos:Document';
+        if (!is_string($filter)) {
+            return 'Neos.Neos:Document';
+        }
+        return $filter;
     }
 
     /**
@@ -232,7 +318,15 @@ class ContentTransferService
         string $dimensionValues,
     ): array {
         $cr = $this->getContentRepository($contentRepositoryId);
-        $parsedDimValues = json_decode($dimensionValues, true, 512, JSON_THROW_ON_ERROR) ?: [];
+        $decodedDimValues = json_decode($dimensionValues, true, 512, JSON_THROW_ON_ERROR);
+        $parsedDimValues = [];
+        if (is_array($decodedDimValues)) {
+            foreach ($decodedDimValues as $key => $value) {
+                if (is_string($key) && is_string($value)) {
+                    $parsedDimValues[$key] = $value;
+                }
+            }
+        }
         $dsp = DimensionSpacePoint::fromArray($parsedDimValues);
         $subgraph = $cr->getContentSubgraph($workspaceName, $dsp);
         $nodeTypeFilter = $this->getNodeTypeFilterForCr($contentRepositoryId);
@@ -241,6 +335,9 @@ class ContentTransferService
             $rootNodeAggregate = $cr->getContentGraph($workspaceName)->findRootNodeAggregates(
                 FindRootNodeAggregatesFilter::create()
             )->first();
+            if ($rootNodeAggregate === null) {
+                return [];
+            }
             $children = $subgraph->findChildNodes(
                 $rootNodeAggregate->nodeAggregateId,
                 FindChildNodesFilter::create(nodeTypes: 'Neos.Neos:Node')
@@ -350,6 +447,9 @@ class ContentTransferService
         $count = 0;
 
         if ($sourceNode->classification->isTethered()) {
+            if ($sourceNode->name === null) {
+                return 0;
+            }
             $targetSubgraph = $contentRepository->getContentSubgraph(
                 $targetWorkspaceName,
                 $sourceOriginDimensionSpacePoint->toDimensionSpacePoint()
