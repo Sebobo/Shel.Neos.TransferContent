@@ -40,6 +40,7 @@ prototype(Shel.Neos.TransferContent:View.ContentTransfer.index) < prototype(Neos
 
         <Neos.Fusion.Form:Form
             form.target.action="index"
+            attributes.id="selectionForm"
             @if={private.hasMultipleCr || private.hasSourceDimensions || private.hasTargetDimensions}
         >
             <fieldset>
