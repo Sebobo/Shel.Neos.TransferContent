@@ -105,21 +105,13 @@
                 <source>Cannot move nodes across different content repositories</source>
                 <target>Knoten können nicht zwischen verschiedenen Content-Repositories verschoben werden</target>
             </trans-unit>
-            <trans-unit id="message.copyStarted" xml:space="preserve">
-                <source>The copy action has been started</source>
-                <target>Der Kopiervorgang wurde gestartet</target>
-            </trans-unit>
             <trans-unit id="message.copied" xml:space="preserve">
                 <source>The node was copied</source>
-                <target>Der Knoten wurde kopiert</target>
-            </trans-unit>
-            <trans-unit id="message.moveStarted" xml:space="preserve">
-                <source>The move action has been started</source>
-                <target>Inhalte werden verschoben</target>
+                <target>Der Inhalt wurde kopiert</target>
             </trans-unit>
             <trans-unit id="message.moved" xml:space="preserve">
                 <source>The node was moved</source>
-                <target>Der Knoten wurde verschoben</target>
+                <target>Der Inhalt wurde verschoben</target>
             </trans-unit>
         </body>
     </file>

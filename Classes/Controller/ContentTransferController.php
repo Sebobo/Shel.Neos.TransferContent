@@ -9,6 +9,7 @@ use Neos\ContentRepository\Core\ContentRepository;
 use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
 use Neos\ContentRepository\Core\DimensionSpace\OriginDimensionSpacePoint;
 use Neos\ContentRepository\Core\Feature\NodeCreation\Command\CreateNodeAggregateWithNode;
+use Neos\ContentRepository\Core\Feature\NodeModification\Command\SetNodeProperties;
 use Neos\ContentRepository\Core\Feature\NodeModification\Dto\PropertyValuesToWrite;
 use Neos\ContentRepository\Core\Feature\NodeMove\Command\MoveNodeAggregate;
 use Neos\ContentRepository\Core\Feature\NodeMove\Dto\RelationDistributionStrategy;
@@ -290,16 +291,13 @@ class ContentTransferController extends AbstractModuleController
                 );
             } else {
                 $this->moveNode($sourceCr, $sourceNode, $targetParentNode, $targetWorkspace);
-                $this->addFlashMessage(
-                    $this->translate('message.moveStarted'),
-                    'Success',
-                );
             }
         } else {
-            $this->copyNode($sourceCr, $targetCr, $sourceNode, $targetParentNode, $targetWorkspace);
-            $this->addFlashMessage(
-                $this->translate('message.copyStarted'),
-                'Success',
+            $this->copyNode(
+                $sourceCr,
+                $targetCr,
+                $sourceNode,
+                $targetParentNode,
             );
         }
 
@@ -346,8 +344,7 @@ class ContentTransferController extends AbstractModuleController
         ContentRepository $sourceCr,
         ContentRepository $targetCr,
         Node $sourceNode,
-        Node $targetParentNode,
-        WorkspaceName $targetWorkspaceName
+        Node $targetParentNode
     ): void {
         try {
             $sourceSubgraph = $sourceCr->getContentSubgraph(
@@ -360,8 +357,8 @@ class ContentTransferController extends AbstractModuleController
                 sourceSubgraph: $sourceSubgraph,
                 sourceNode: $sourceNode,
                 targetParentNodeAggregateId: $targetParentNode->aggregateId,
-                targetWorkspaceName: $targetWorkspaceName,
-                sourceOriginDimensionSpacePoint: $sourceNode->originDimensionSpacePoint,
+                targetWorkspaceName: $targetParentNode->workspaceName,
+                sourceOriginDimensionSpacePoint: $targetParentNode->originDimensionSpacePoint,
             );
 
             $this->addFlashMessage(
@@ -377,6 +374,9 @@ class ContentTransferController extends AbstractModuleController
         }
     }
 
+    /**
+     * @throws AccessDenied
+     */
     private function copyNodeRecursive(
         ContentRepository $contentRepository,
         ContentSubgraphInterface $sourceSubgraph,
@@ -385,23 +385,58 @@ class ContentTransferController extends AbstractModuleController
         WorkspaceName $targetWorkspaceName,
         OriginDimensionSpacePoint $sourceOriginDimensionSpacePoint,
     ): void {
-        $newNodeAggregateId = NodeAggregateId::create();
+        if ($sourceNode->classification->isTethered()) {
+            $targetSubgraph = $contentRepository->getContentSubgraph(
+                $targetWorkspaceName,
+                $sourceOriginDimensionSpacePoint->toDimensionSpacePoint()
+            );
+            $existingNode = $targetSubgraph->findNodeByPath(
+                $sourceNode->name,
+                $targetParentNodeAggregateId
+            );
 
-        $propertyValues = [];
-        foreach ($sourceNode->properties as $propertyName => $propertyValue) {
-            $propertyValues[$propertyName] = $propertyValue;
+            if ($existingNode === null) {
+                return;
+            }
+
+            $propertyValues = [];
+            foreach ($sourceNode->properties as $propertyName => $propertyValue) {
+                $propertyValues[$propertyName] = $propertyValue;
+            }
+
+            if ($propertyValues !== []) {
+                $contentRepository->handle(
+                    SetNodeProperties::create(
+                        workspaceName: $targetWorkspaceName,
+                        nodeAggregateId: $existingNode->aggregateId,
+                        originDimensionSpacePoint: $sourceOriginDimensionSpacePoint,
+                        propertyValues: PropertyValuesToWrite::fromArray($propertyValues),
+                    )
+                );
+            }
+
+            $parentNodeAggregateId = $existingNode->aggregateId;
+        } else {
+            $newNodeAggregateId = NodeAggregateId::create();
+
+            $propertyValues = [];
+            foreach ($sourceNode->properties as $propertyName => $propertyValue) {
+                $propertyValues[$propertyName] = $propertyValue;
+            }
+
+            $contentRepository->handle(
+                CreateNodeAggregateWithNode::create(
+                    workspaceName: $targetWorkspaceName,
+                    nodeAggregateId: $newNodeAggregateId,
+                    nodeTypeName: $sourceNode->nodeTypeName,
+                    originDimensionSpacePoint: $sourceOriginDimensionSpacePoint,
+                    parentNodeAggregateId: $targetParentNodeAggregateId,
+                    initialPropertyValues: PropertyValuesToWrite::fromArray($propertyValues),
+                )
+            );
+
+            $parentNodeAggregateId = $newNodeAggregateId;
         }
-
-        $contentRepository->handle(
-            CreateNodeAggregateWithNode::create(
-                workspaceName: $targetWorkspaceName,
-                nodeAggregateId: $newNodeAggregateId,
-                nodeTypeName: $sourceNode->nodeTypeName,
-                originDimensionSpacePoint: $sourceOriginDimensionSpacePoint,
-                parentNodeAggregateId: $targetParentNodeAggregateId,
-                initialPropertyValues: PropertyValuesToWrite::fromArray($propertyValues),
-            )
-        );
 
         $childNodes = $sourceSubgraph->findChildNodes(
             $sourceNode->aggregateId,
@@ -413,7 +448,7 @@ class ContentTransferController extends AbstractModuleController
                 contentRepository: $contentRepository,
                 sourceSubgraph: $sourceSubgraph,
                 sourceNode: $childNode,
-                targetParentNodeAggregateId: $newNodeAggregateId,
+                targetParentNodeAggregateId: $parentNodeAggregateId,
                 targetWorkspaceName: $targetWorkspaceName,
                 sourceOriginDimensionSpacePoint: $sourceOriginDimensionSpacePoint,
             );
