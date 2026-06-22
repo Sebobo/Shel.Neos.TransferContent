@@ -407,6 +407,7 @@ class ContentTransferService
         foreach ($compatibleODSPs as $odsp) {
             $dsp = $odsp->toDimensionSpacePoint();
             $sourceVariantSubgraph = $sourceCr->getContentSubgraph($sourceNode->workspaceName, $dsp);
+        $variantCount = 0;
             $sourceVariant = $sourceVariantSubgraph->findNodeById($sourceNode->aggregateId);
 
             if ($sourceVariant === null) {
@@ -420,6 +421,7 @@ class ContentTransferService
                 continue;
             }
 
+            $variantCount++;
             $nodeCount += $this->copyNodeRecursive(
                 contentRepository: $targetCr,
                 sourceSubgraph: $sourceVariantSubgraph,
@@ -432,7 +434,7 @@ class ContentTransferService
 
         return new CopyResult(
             nodeCount: $nodeCount,
-            variantCount: count($compatibleODSPs),
+            variantCount: $variantCount,
         );
     }
 

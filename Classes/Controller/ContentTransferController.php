@@ -275,13 +275,21 @@ class ContentTransferController extends AbstractModuleController
                     $sourceNode,
                     $targetParentNode,
                 );
-                $this->addFlashMessage(
-                    $this->translate('message.copied', [
-                        (string)$result->nodeCount,
-                        (string)$result->variantCount,
-                    ]),
-                    'Success'
-                );
+
+                if ($result->nodeCount === 0) {
+                    $this->addFlashMessage(
+                        $this->translate('message.copiedNone'),
+                        $this->translate('warning'),
+                        Message::SEVERITY_WARNING
+                    );
+                } else {
+                    $this->addFlashMessage(
+                        $this->translate('message.copied', [
+                            (string)$result->nodeCount,
+                            (string)$result->variantCount,
+                        ])
+                    );
+                }
             } catch (\Exception $e) {
                 $this->addFlashMessage(
                     $this->translate('error.copyFailed', [$e->getMessage()]),

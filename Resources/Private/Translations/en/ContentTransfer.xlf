@@ -83,8 +83,14 @@
             <trans-unit id="message.copied" xml:space="preserve">
                 <source>Copied {0} node(s) in {1} variant(s)</source>
             </trans-unit>
+            <trans-unit id="message.copiedNone" xml:space="preserve">
+                <source>The document was marked as copied, but no nodes were created. Check if the target node exists in the selected dimension.</source>
+            </trans-unit>
             <trans-unit id="message.moved" xml:space="preserve">
                 <source>The node was moved</source>
+            </trans-unit>
+            <trans-unit id="warning" xml:space="preserve">
+                <source>Warning</source>
             </trans-unit>
         </body>
     </file>

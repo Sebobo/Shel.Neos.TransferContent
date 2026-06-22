@@ -4,7 +4,7 @@
     if (messages && messages.length) {
       messages.forEach(function(m) {
         if (window.NeosCMS && window.NeosCMS.Notification && window.NeosCMS.Notification[m.severity]) {
-          window.NeosCMS.Notification[m.severity](m.title, m.message || '');
+          window.NeosCMS.Notification[m.severity](m.title || m.message, m.message || '');
         }
       });
     }

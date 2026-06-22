@@ -109,9 +109,17 @@
                 <source>Copied {0} node(s) in {1} variant(s)</source>
                 <target>{0} Knoten in {1} Variante(n) kopiert</target>
             </trans-unit>
+            <trans-unit id="message.copiedNone" xml:space="preserve">
+                <source>The document was marked as copied, but no nodes were created. Check if the target node exists in the selected dimension.</source>
+                <target>Das Dokument wurde als kopiert markiert, aber es wurden keine Kopie erzeugt. Überprüfen Sie, ob das Zieldokument in der ausgewählten Dimension existiert.</target>
+            </trans-unit>
             <trans-unit id="message.moved" xml:space="preserve">
                 <source>The node was moved</source>
                 <target>Der Inhalt wurde verschoben</target>
+            </trans-unit>
+            <trans-unit id="warning" xml:space="preserve">
+                <source>Warning</source>
+                <target>Warnung</target>
             </trans-unit>
         </body>
     </file>
