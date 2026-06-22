@@ -10,6 +10,7 @@ use Neos\ContentRepository\Core\DimensionSpace\OriginDimensionSpacePoint;
 use Neos\ContentRepository\Core\DimensionSpace\OriginDimensionSpacePointSet;
 use Neos\ContentRepository\Core\Feature\NodeCreation\Command\CreateNodeAggregateWithNode;
 use Neos\ContentRepository\Core\Feature\NodeModification\Command\SetNodeProperties;
+use Neos\ContentRepository\Core\Feature\NodeVariation\Command\CreateNodeVariant;
 use Neos\ContentRepository\Core\Feature\NodeModification\Dto\PropertyValuesToWrite;
 use Neos\ContentRepository\Core\Feature\NodeMove\Command\MoveNodeAggregate;
 use Neos\ContentRepository\Core\Feature\NodeMove\Dto\RelationDistributionStrategy;
@@ -403,16 +404,20 @@ class ContentTransferService
             $targetCr,
         );
 
-        $targetDimNames = array_keys($this->getDimensionValuesMap($targetCr->id));
+        $targetDimensionNames = array_keys($this->getDimensionValuesMap($targetCr->id));
         $targetParentCoordinates = $targetParentNode->originDimensionSpacePoint->coordinates;
 
         $nodeCount = 0;
         $variantCount = 0;
-        foreach ($compatibleSourceODSPs as $sourceOdsp) {
+        $first = true;
+        $aggregateIdMapping = [];
+        $firstOriginForVariant = null;
+
+        foreach ($compatibleSourceODSPs as $sourceODSP) {
             $mergedCoordinates = [];
-            foreach ($targetDimNames as $dimName) {
-                if (isset($sourceOdsp->coordinates[$dimName])) {
-                    $mergedCoordinates[$dimName] = $sourceOdsp->coordinates[$dimName];
+            foreach ($targetDimensionNames as $dimName) {
+                if (isset($sourceODSP->coordinates[$dimName])) {
+                    $mergedCoordinates[$dimName] = $sourceODSP->coordinates[$dimName];
                 } elseif (isset($targetParentCoordinates[$dimName])) {
                     $mergedCoordinates[$dimName] = $targetParentCoordinates[$dimName];
                 }
@@ -422,11 +427,11 @@ class ContentTransferService
                 continue;
             }
 
-            $mergedDsp = DimensionSpacePoint::fromArray($mergedCoordinates);
+            $mergedDSP = DimensionSpacePoint::fromArray($mergedCoordinates);
 
             $sourceVariantSubgraph = $sourceCr->getContentSubgraph(
                 $sourceNode->workspaceName,
-                $sourceOdsp->toDimensionSpacePoint()
+                $sourceODSP->toDimensionSpacePoint()
             );
             $sourceVariant = $sourceVariantSubgraph->findNodeById($sourceNode->aggregateId);
 
@@ -436,23 +441,62 @@ class ContentTransferService
 
             $targetVariantSubgraph = $targetCr->getContentSubgraph(
                 $targetParentNode->workspaceName,
-                $mergedDsp
+                $mergedDSP
             );
             $targetParentVariant = $targetVariantSubgraph->findNodeById($targetParentNode->aggregateId);
 
-            if ($targetParentVariant === null) {
-                continue;
+            if ($targetParentVariant === null || !$targetParentVariant->dimensionSpacePoint->equals($mergedDSP)) {
+                $targetCr->handle(
+                    CreateNodeVariant::create(
+                        workspaceName: $targetParentNode->workspaceName,
+                        nodeAggregateId: $targetParentNode->aggregateId,
+                        sourceOrigin: $targetParentNode->originDimensionSpacePoint,
+                        targetOrigin: OriginDimensionSpacePoint::fromDimensionSpacePoint($mergedDSP),
+                    )
+                );
+
+                $targetVariantSubgraph = $targetCr->getContentSubgraph(
+                    $targetParentNode->workspaceName,
+                    $mergedDSP
+                );
+                $targetParentVariant = $targetVariantSubgraph->findNodeById($targetParentNode->aggregateId);
+
+                if ($targetParentVariant === null) {
+                    continue;
+                }
             }
 
             $variantCount++;
-            $nodeCount += $this->copyNodeRecursive(
-                contentRepository: $targetCr,
-                sourceSubgraph: $sourceVariantSubgraph,
-                sourceNode: $sourceVariant,
-                targetParentNodeAggregateId: $targetParentVariant->aggregateId,
-                targetWorkspaceName: $targetParentNode->workspaceName,
-                sourceOriginDimensionSpacePoint: $targetParentVariant->originDimensionSpacePoint,
-            );
+
+            if ($first) {
+                $first = false;
+                $firstOriginForVariant = OriginDimensionSpacePoint::fromDimensionSpacePoint(
+                    $targetParentVariant->dimensionSpacePoint
+                );
+
+                $nodeCount += $this->copyFirstVariantRecursive(
+                    contentRepository: $targetCr,
+                    sourceSubgraph: $sourceVariantSubgraph,
+                    sourceNode: $sourceVariant,
+                    targetParentNodeAggregateId: $targetParentVariant->aggregateId,
+                    targetWorkspaceName: $targetParentNode->workspaceName,
+                    targetDimensionSpacePoint: $targetParentVariant->dimensionSpacePoint,
+                    aggregateIdMapping: $aggregateIdMapping,
+                );
+            } else {
+                if ($firstOriginForVariant === null) {
+                    continue;
+                }
+                $nodeCount += $this->createVariantsForTree(
+                    contentRepository: $targetCr,
+                    sourceSubgraph: $sourceVariantSubgraph,
+                    sourceNode: $sourceVariant,
+                    aggregateIdMapping: $aggregateIdMapping,
+                    targetWorkspaceName: $targetParentNode->workspaceName,
+                    targetDimensionSpacePoint: $mergedDSP,
+                    sourceOriginForVariant: $firstOriginForVariant,
+                );
+            }
         }
 
         return new CopyResult(
@@ -461,13 +505,17 @@ class ContentTransferService
         );
     }
 
-    private function copyNodeRecursive(
+    /**
+     * @param array<string, string> &$aggregateIdMapping
+     */
+    private function copyFirstVariantRecursive(
         ContentRepository $contentRepository,
         ContentSubgraphInterface $sourceSubgraph,
         Node $sourceNode,
         NodeAggregateId $targetParentNodeAggregateId,
         WorkspaceName $targetWorkspaceName,
-        OriginDimensionSpacePoint $sourceOriginDimensionSpacePoint,
+        DimensionSpacePoint $targetDimensionSpacePoint,
+        array &$aggregateIdMapping,
     ): int {
         $count = 0;
 
@@ -477,7 +525,7 @@ class ContentTransferService
             }
             $targetSubgraph = $contentRepository->getContentSubgraph(
                 $targetWorkspaceName,
-                $sourceOriginDimensionSpacePoint->toDimensionSpacePoint()
+                $targetDimensionSpacePoint
             );
             $existingNode = $targetSubgraph->findNodeByPath(
                 $sourceNode->name,
@@ -498,12 +546,15 @@ class ContentTransferService
                     SetNodeProperties::create(
                         workspaceName: $targetWorkspaceName,
                         nodeAggregateId: $existingNode->aggregateId,
-                        originDimensionSpacePoint: $sourceOriginDimensionSpacePoint,
+                        originDimensionSpacePoint: OriginDimensionSpacePoint::fromDimensionSpacePoint(
+                            $targetDimensionSpacePoint
+                        ),
                         propertyValues: PropertyValuesToWrite::fromArray($propertyValues),
                     )
                 );
             }
 
+            $aggregateIdMapping[$sourceNode->aggregateId->value] = $existingNode->aggregateId->value;
             $parentNodeAggregateId = $existingNode->aggregateId;
         } else {
             $newNodeAggregateId = NodeAggregateId::create();
@@ -518,12 +569,15 @@ class ContentTransferService
                     workspaceName: $targetWorkspaceName,
                     nodeAggregateId: $newNodeAggregateId,
                     nodeTypeName: $sourceNode->nodeTypeName,
-                    originDimensionSpacePoint: $sourceOriginDimensionSpacePoint,
+                    originDimensionSpacePoint: OriginDimensionSpacePoint::fromDimensionSpacePoint(
+                        $targetDimensionSpacePoint
+                    ),
                     parentNodeAggregateId: $targetParentNodeAggregateId,
                     initialPropertyValues: PropertyValuesToWrite::fromArray($propertyValues),
                 )
             );
 
+            $aggregateIdMapping[$sourceNode->aggregateId->value] = $newNodeAggregateId->value;
             $parentNodeAggregateId = $newNodeAggregateId;
         }
 
@@ -535,13 +589,90 @@ class ContentTransferService
         );
 
         foreach ($childNodes as $childNode) {
-            $count += $this->copyNodeRecursive(
+            $count += $this->copyFirstVariantRecursive(
                 contentRepository: $contentRepository,
                 sourceSubgraph: $sourceSubgraph,
                 sourceNode: $childNode,
                 targetParentNodeAggregateId: $parentNodeAggregateId,
                 targetWorkspaceName: $targetWorkspaceName,
-                sourceOriginDimensionSpacePoint: $sourceOriginDimensionSpacePoint,
+                targetDimensionSpacePoint: $targetDimensionSpacePoint,
+                aggregateIdMapping: $aggregateIdMapping,
+            );
+        }
+
+        return $count;
+    }
+
+    /**
+     * @param array<string, string> $aggregateIdMapping
+     */
+    private function createVariantsForTree(
+        ContentRepository $contentRepository,
+        ContentSubgraphInterface $sourceSubgraph,
+        Node $sourceNode,
+        array $aggregateIdMapping,
+        WorkspaceName $targetWorkspaceName,
+        DimensionSpacePoint $targetDimensionSpacePoint,
+        OriginDimensionSpacePoint $sourceOriginForVariant,
+    ): int {
+        $count = 0;
+
+        $mappedAggregateIdValue = $aggregateIdMapping[$sourceNode->aggregateId->value] ?? null;
+        if ($mappedAggregateIdValue === null) {
+            return 0;
+        }
+
+        $targetAggregateId = NodeAggregateId::fromString($mappedAggregateIdValue);
+
+        $targetVariantSubgraph = $contentRepository->getContentSubgraph(
+            $targetWorkspaceName,
+            $targetDimensionSpacePoint
+        );
+        $existingVariant = $targetVariantSubgraph->findNodeById($targetAggregateId);
+
+        if ($existingVariant === null) {
+            $contentRepository->handle(
+                CreateNodeVariant::create(
+                    workspaceName: $targetWorkspaceName,
+                    nodeAggregateId: $targetAggregateId,
+                    sourceOrigin: $sourceOriginForVariant,
+                    targetOrigin: OriginDimensionSpacePoint::fromDimensionSpacePoint($targetDimensionSpacePoint),
+                )
+            );
+        }
+
+        $propertyValues = [];
+        foreach ($sourceNode->properties as $propertyName => $propertyValue) {
+            $propertyValues[$propertyName] = $propertyValue;
+        }
+
+        if ($propertyValues !== []) {
+            $contentRepository->handle(
+                SetNodeProperties::create(
+                    workspaceName: $targetWorkspaceName,
+                    nodeAggregateId: $targetAggregateId,
+                    originDimensionSpacePoint: OriginDimensionSpacePoint::fromDimensionSpacePoint($targetDimensionSpacePoint),
+                    propertyValues: PropertyValuesToWrite::fromArray($propertyValues),
+                )
+            );
+        }
+
+        $count++;
+
+        $childNodes = $sourceSubgraph->findChildNodes(
+            $sourceNode->aggregateId,
+            FindChildNodesFilter::create()
+        );
+
+        foreach ($childNodes as $childNode) {
+            $count += $this->createVariantsForTree(
+                contentRepository: $contentRepository,
+                sourceSubgraph: $sourceSubgraph,
+                sourceNode: $childNode,
+                aggregateIdMapping: $aggregateIdMapping,
+                targetWorkspaceName: $targetWorkspaceName,
+                targetDimensionSpacePoint: $targetDimensionSpacePoint,
+                sourceOriginForVariant: $sourceOriginForVariant,
             );
         }
 
