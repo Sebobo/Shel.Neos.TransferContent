@@ -398,23 +398,46 @@ class ContentTransferService
             return new CopyResult(nodeCount: 0, variantCount: 0);
         }
 
-        $compatibleODSPs = $this->filterCompatibleOriginDimensionSpacePoints(
+        $compatibleSourceODSPs = $this->filterCompatibleOriginDimensionSpacePoints(
             $sourceAggregate->occupiedDimensionSpacePoints,
             $targetCr,
         );
 
+        $targetDimNames = array_keys($this->getDimensionValuesMap($targetCr->id));
+        $targetParentCoordinates = $targetParentNode->originDimensionSpacePoint->coordinates;
+
         $nodeCount = 0;
-        foreach ($compatibleODSPs as $odsp) {
-            $dsp = $odsp->toDimensionSpacePoint();
-            $sourceVariantSubgraph = $sourceCr->getContentSubgraph($sourceNode->workspaceName, $dsp);
         $variantCount = 0;
+        foreach ($compatibleSourceODSPs as $sourceOdsp) {
+            $mergedCoordinates = [];
+            foreach ($targetDimNames as $dimName) {
+                if (isset($sourceOdsp->coordinates[$dimName])) {
+                    $mergedCoordinates[$dimName] = $sourceOdsp->coordinates[$dimName];
+                } elseif (isset($targetParentCoordinates[$dimName])) {
+                    $mergedCoordinates[$dimName] = $targetParentCoordinates[$dimName];
+                }
+            }
+
+            if ($mergedCoordinates === []) {
+                continue;
+            }
+
+            $mergedDsp = DimensionSpacePoint::fromArray($mergedCoordinates);
+
+            $sourceVariantSubgraph = $sourceCr->getContentSubgraph(
+                $sourceNode->workspaceName,
+                $sourceOdsp->toDimensionSpacePoint()
+            );
             $sourceVariant = $sourceVariantSubgraph->findNodeById($sourceNode->aggregateId);
 
             if ($sourceVariant === null) {
                 continue;
             }
 
-            $targetVariantSubgraph = $targetCr->getContentSubgraph($targetParentNode->workspaceName, $dsp);
+            $targetVariantSubgraph = $targetCr->getContentSubgraph(
+                $targetParentNode->workspaceName,
+                $mergedDsp
+            );
             $targetParentVariant = $targetVariantSubgraph->findNodeById($targetParentNode->aggregateId);
 
             if ($targetParentVariant === null) {
