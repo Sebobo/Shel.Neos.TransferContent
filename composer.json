@@ -28,7 +28,7 @@
     }
   },
   "scripts": {
-    "phpstan": "phpstan analyse -c phpstan.neon --level=max"
+    "phpstan": "phpstan analyse -c phpstan.neon"
   },
   "extra": {
     "neos": {

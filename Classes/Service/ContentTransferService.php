@@ -14,6 +14,7 @@ use Neos\ContentRepository\Core\Feature\NodeVariation\Command\CreateNodeVariant;
 use Neos\ContentRepository\Core\Feature\NodeModification\Dto\PropertyValuesToWrite;
 use Neos\ContentRepository\Core\Feature\NodeMove\Command\MoveNodeAggregate;
 use Neos\ContentRepository\Core\Feature\NodeMove\Dto\RelationDistributionStrategy;
+use Neos\ContentRepository\Core\Feature\Security\Exception\AccessDenied;
 use Neos\ContentRepository\Core\Projection\ContentGraph\ContentSubgraphInterface;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\CountChildNodesFilter;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter;
@@ -21,6 +22,7 @@ use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindRootNodeAggre
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateIds;
 use Neos\ContentRepository\Core\SharedModel\Workspace\Workspace;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
@@ -506,7 +508,7 @@ class ContentTransferService
     }
 
     /**
-     * @param array<string, string> &$aggregateIdMapping
+     * @param array<string, NodeAggregateId> $aggregateIdMapping
      */
     private function copyFirstVariantRecursive(
         ContentRepository $contentRepository,
@@ -554,7 +556,7 @@ class ContentTransferService
                 );
             }
 
-            $aggregateIdMapping[$sourceNode->aggregateId->value] = $existingNode->aggregateId->value;
+            $aggregateIdMapping[$sourceNode->aggregateId->value] = $existingNode->aggregateId;
             $parentNodeAggregateId = $existingNode->aggregateId;
         } else {
             $newNodeAggregateId = NodeAggregateId::create();
@@ -577,7 +579,7 @@ class ContentTransferService
                 )
             );
 
-            $aggregateIdMapping[$sourceNode->aggregateId->value] = $newNodeAggregateId->value;
+            $aggregateIdMapping[$sourceNode->aggregateId->value] = $newNodeAggregateId;
             $parentNodeAggregateId = $newNodeAggregateId;
         }
 
@@ -604,7 +606,8 @@ class ContentTransferService
     }
 
     /**
-     * @param array<string, string> $aggregateIdMapping
+     * @param array<string, NodeAggregateId> $aggregateIdMapping
+     * @throws AccessDenied
      */
     private function createVariantsForTree(
         ContentRepository $contentRepository,
@@ -617,12 +620,10 @@ class ContentTransferService
     ): int {
         $count = 0;
 
-        $mappedAggregateIdValue = $aggregateIdMapping[$sourceNode->aggregateId->value] ?? null;
-        if ($mappedAggregateIdValue === null) {
+        $targetAggregateId = $aggregateIdMapping[$sourceNode->aggregateId->value] ?? null;
+        if ($targetAggregateId === null) {
             return 0;
         }
-
-        $targetAggregateId = NodeAggregateId::fromString($mappedAggregateIdValue);
 
         $targetVariantSubgraph = $contentRepository->getContentSubgraph(
             $targetWorkspaceName,
@@ -651,7 +652,9 @@ class ContentTransferService
                 SetNodeProperties::create(
                     workspaceName: $targetWorkspaceName,
                     nodeAggregateId: $targetAggregateId,
-                    originDimensionSpacePoint: OriginDimensionSpacePoint::fromDimensionSpacePoint($targetDimensionSpacePoint),
+                    originDimensionSpacePoint: OriginDimensionSpacePoint::fromDimensionSpacePoint(
+                        $targetDimensionSpacePoint
+                    ),
                     propertyValues: PropertyValuesToWrite::fromArray($propertyValues),
                 )
             );
