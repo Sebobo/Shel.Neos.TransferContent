@@ -1,9 +1,5 @@
 Neos:
   Neos:
-    fusion:
-      autoInclude:
-        Shel.Neos.TransferContent: true
-
     userInterface:
       translation:
         autoInclude:
