@@ -1,0 +1,270 @@
+prototype(Shel.Neos.TransferContent:View.ContentTransfer.index) < prototype(Neos.Fusion:Component) {
+    contentRepositoryIds = ${contentRepositoryIds}
+    sourceContentRepository = ${sourceContentRepository}
+    targetContentRepository = ${targetContentRepository}
+    sourceWorkspaces = ${sourceWorkspaces}
+    targetWorkspaces = ${targetWorkspaces}
+    sourceWorkspace = ${sourceWorkspace}
+    targetWorkspace = ${targetWorkspace}
+    sourceDimensions = ${sourceDimensions}
+    targetDimensions = ${targetDimensions}
+    sourceDimensionValues = ${sourceDimensionValues}
+    targetDimensionValues = ${targetDimensionValues}
+    allowNodeMoving = ${allowNodeMoving}
+    flashMessagesData = ${flashMessagesData}
+
+    prototype(Neos.Fusion.Form:LabelRenderer) {
+        translationPackage = 'Shel.Neos.TransferContent'
+        translationSource = 'ContentTransfer'
+    }
+
+    prototype(Neos.Fusion.Form:Neos.BackendModule.FieldContainer) {
+        translation.label {
+            package = 'Shel.Neos.TransferContent'
+            source = 'ContentTransfer'
+        }
+    }
+
+    @private {
+        i18n = ${I18n.id('').source('ContentTransfer').package('Shel.Neos.TransferContent')}
+        helpText = ${private.i18n.id('help.text').translate()}
+        hasMultipleCr = ${props.contentRepositoryIds != null && Array.length(props.contentRepositoryIds) > 1}
+        hasSourceDimensions = ${props.sourceDimensions != null && Array.length(props.sourceDimensions) > 0}
+        hasTargetDimensions = ${props.targetDimensions != null && Array.length(props.targetDimensions) > 0}
+    }
+
+    renderer = afx`
+        <script @if.hasFlashMessages={Array.length(props.flashMessagesData) > 0}>
+            window.flashMessagesData = {Json.stringify(props.flashMessagesData)};
+        </script>
+
+        <Neos.Fusion.Form:Form
+            form.target.action="index"
+            attributes.id="selectionForm"
+            @if={private.hasMultipleCr || private.hasSourceDimensions || private.hasTargetDimensions}
+        >
+            <fieldset>
+                <div class="neos-row-fluid">
+                    <div class="neos-span6">
+                        <div @if={private.hasMultipleCr}>
+                            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer
+                                field.name="sourceContentRepository"
+                                field.value={props.targetContentRepository}
+                                label="sourceContentRepository"
+                                class="neos-control-group"
+                            >
+                                <Neos.Fusion.Form:Select
+                                    attributes.class="neos-span12"
+                                    attributes.data-auto-submit="true"
+                                >
+                                    <Neos.Fusion:Loop items={props.contentRepositoryIds} itemName="crId">
+                                        <Neos.Fusion.Form:Select.Option
+                                            option.value={crId}
+                                            attributes.selected={props.sourceContentRepository.value == crId}
+                                        >
+                                            {crId}
+                                        </Neos.Fusion.Form:Select.Option>
+                                    </Neos.Fusion:Loop>
+                                </Neos.Fusion.Form:Select>
+                            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
+                        </div>
+
+                        <div @if={private.hasSourceDimensions} class="ct-dimension-group">
+                            <Neos.Fusion.Form:Hidden
+                                field.name="sourceDimensionValues"
+                                field.value={Json.stringify(props.sourceDimensionValues)}
+                                attributes.data-dimension-values="true"
+                            />
+                            <h5>{private.i18n.id('sourceDimension').translate()}</h5>
+                            <Neos.Fusion:Loop items={props.sourceDimensions} itemName="dimension">
+                                <div class="neos-control-group">
+                                    <label
+                                        class="neos-control-label"
+                                        for={'dimension-' + dimension.id}
+                                    >
+                                        {dimension.label}
+                                    </label>
+                                    <div class="neos-controls">
+                                        <select
+                                            id={'dimension-' + dimension.id}
+                                            class="ct-dimension-select neos-span12"
+                                            data-dimension-id={dimension.id}
+                                            data-auto-submit="true"
+                                        >
+                                            <Neos.Fusion:Loop items={dimension.values} itemName="val">
+                                                <option
+                                                    value={val.value}
+                                                    selected={props.sourceDimensionValues[dimension.id] == val.value}
+                                                >
+                                                    {val.label}
+                                                </option>
+                                            </Neos.Fusion:Loop>
+                                        </select>
+                                    </div>
+                                </div>
+                            </Neos.Fusion:Loop>
+                        </div>
+                    </div>
+                    <div class="neos-span6">
+                        <div @if={private.hasMultipleCr}>
+                            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer
+                                field.name="targetContentRepository"
+                                field.value={props.targetContentRepository}
+                                label="targetContentRepository"
+                                class="neos-control-group"
+                            >
+                                <Neos.Fusion.Form:Select
+                                    attributes.class="neos-span12"
+                                    attributes.data-auto-submit="true"
+                                >
+                                    <Neos.Fusion:Loop items={props.contentRepositoryIds} itemName="crId">
+                                        <Neos.Fusion.Form:Select.Option
+                                            option.value={crId}
+                                            attributes.selected={props.targetContentRepository.value == crId}
+                                        >
+                                            {crId}
+                                        </Neos.Fusion.Form:Select.Option>
+                                    </Neos.Fusion:Loop>
+                                </Neos.Fusion.Form:Select>
+                            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
+                        </div>
+                        <div @if={private.hasTargetDimensions} class="ct-dimension-group">
+                            <Neos.Fusion.Form:Hidden
+                                field.name="targetDimensionValues"
+                                field.value={Json.stringify(props.targetDimensionValues)}
+                                attributes.data-dimension-values="true"
+                            />
+                            <h5>{private.i18n.id('targetDimension').translate()}</h5>
+                            <Neos.Fusion:Loop items={props.targetDimensions} itemName="dimension">
+                                <div class="neos-control-group">
+                                    <label class="neos-control-label" for={dimension.id}>{dimension.label}</label>
+                                    <div class="neos-controls">
+                                        <select
+                                            class="ct-dimension-select neos-span12"
+                                            id={dimension.id}
+                                            data-dimension-id={dimension.id}
+                                            data-auto-submit="true"
+                                        >
+                                            <Neos.Fusion:Loop items={dimension.values} itemName="val">
+                                                <option
+                                                    value={val.value}
+                                                    selected={props.targetDimensionValues[dimension.id] == val.value}
+                                                >
+                                                    {val.label}
+                                                </option>
+                                            </Neos.Fusion:Loop>
+                                        </select>
+                                    </div>
+                                </div>
+                            </Neos.Fusion:Loop>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+        </Neos.Fusion.Form:Form>
+
+        <Neos.Fusion.Form:Form
+            form.target.action="copyNode"
+            attributes.id="contentTransferForm"
+        >
+            <fieldset>
+                <div class="neos-row-fluid">
+                    <div class="neos-span6">
+                        <h4>{private.i18n.id('sourceDocument').translate()}</h4>
+
+                        <div
+                            class="content-transfer-tree"
+                            data-content-repository={props.sourceContentRepository.value}
+                            data-input-name="sourceNodePath"
+                            data-workspace-name={props.sourceWorkspace}
+                            data-dimension-values={Json.stringify(props.sourceDimensionValues)}
+                            data-workspaces={Json.stringify(props.sourceWorkspaces)}
+                            data-label={private.i18n.id('sourceDocument').translate()}
+                        >
+                            <Neos.Fusion.Form:Hidden
+                                field.name="sourceContentRepository"
+                                field.value={props.sourceContentRepository.value}
+                            />
+                            <Neos.Fusion.Form:Hidden
+                                field.name="sourceNodePath"
+                                attributes.data-tree-input="sourceNodePath"
+                            />
+                            <Neos.Fusion.Form:Hidden
+                                field.name="sourceWorkspace"
+                                field.value={props.sourceWorkspace}
+                                attributes.data-tree-input="sourceWorkspace"
+                            />
+                            <Neos.Fusion.Form:Hidden
+                                field.name="sourceDimensionValues"
+                                field.value={Json.stringify(props.sourceDimensionValues)}
+                            />
+                            <div class="ct-tree-header"></div>
+                            <div class="ct-tree-wrapper"></div>
+                            <div class="ct-selection-info"></div>
+                        </div>
+                    </div>
+
+                    <div class="neos-span6">
+                        <h4 style="margin-bottom: 12px;">{private.i18n.id('targetDocument').translate()}</h4>
+
+                        <div
+                            class="content-transfer-tree"
+                            data-content-repository={props.targetContentRepository.value}
+                            data-input-name="targetParentNodePath"
+                            data-workspace-name={props.targetWorkspace}
+                            data-dimension-values={Json.stringify(props.targetDimensionValues)}
+                            data-workspaces={Json.stringify(props.targetWorkspaces)}
+                            data-label={private.i18n.id('targetDocument').translate()}
+                        >
+                            <Neos.Fusion.Form:Hidden
+                                field.name="targetContentRepository"
+                                field.value={props.targetContentRepository.value}
+                            />
+                            <Neos.Fusion.Form:Hidden
+                                field.name="targetParentNodePath"
+                                attributes.data-tree-input="targetParentNodePath"
+                            />
+                            <Neos.Fusion.Form:Hidden
+                                field.name="targetWorkspace"
+                                field.value={props.targetWorkspace}
+                                attributes.data-tree-input="targetWorkspace"
+                            />
+                            <Neos.Fusion.Form:Hidden
+                                field.name="targetDimensionValues"
+                                field.value={Json.stringify(props.targetDimensionValues)}
+                            />
+                            <div class="ct-tree-header"></div>
+                            <div class="ct-tree-wrapper"></div>
+                            <div class="ct-selection-info"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div @if={props.allowNodeMoving}>
+                    <Neos.Fusion.Form:Neos.BackendModule.FieldContainer
+                        field.name="moveNodesInstead"
+                        label="moveNodesInstead"
+                        class="neos-control-group"
+                    >
+                        <Neos.Fusion.Form:Checkbox field.value="1"/>
+                    </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
+                    <div>
+                        <h3>{private.i18n.id('help.headline')}</h3>
+                        <br/>
+                        <p>{private.helpText}</p>
+                    </div>
+                </div>
+            </fieldset>
+        </Neos.Fusion.Form:Form>
+        <footer class="neos-footer">
+            <Neos.Fusion.Form:Button
+                attributes.form="contentTransferForm"
+                attributes.class="neos-button neos-button-primary"
+            >
+                {private.i18n.id('submit').translate()}
+            </Neos.Fusion.Form:Button>
+        </footer>
+    `
+}
+
+Shel.Neos.TransferContent.ContentTransferController.index = Shel.Neos.TransferContent:View.ContentTransfer.index

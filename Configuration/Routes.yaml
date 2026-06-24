@@ -1,0 +1,9 @@
+-
+  name: 'ContentTransfer - Tree children'
+  uriPattern: 'neos/contenttransfer/tree-children'
+  defaults:
+    '@package': 'Shel.Neos.TransferContent'
+    '@controller': 'ContentTransfer'
+    '@action': 'treeChildren'
+    '@format': 'json'
+  httpMethods: ['GET']

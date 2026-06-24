@@ -2,24 +2,23 @@
 
 ## Introduction
 
-This plugin will add a new backend module for copying and moving nodes between sites in a 
+This plugin will add a new backend module for copying and moving nodes between sites in a
 Neos multi site installation.
 
-It's currently compatible with Neos 4.3 and the 5.* branch
+Compatible with Neos 9.x and PHP 8.3+
 
 ## Example
 
 ![Preview](Documentation/example.png) 
 
-### Warning
+### Notes and limitations
 
-This package was built to solve a very specific issue and should only be used by 
-website administrators who know what their doing.
+* This package was built to solve a very specific issue and should only be used by 
+website administrators who know what they're doing.
+* Also note that references and links inside the copied nodes are not updated to link to their copied target and therefore still link to the site where they were copied from, or are missing.
+* The copied content includes variants of the copied nodes if they match the variants of the selected node. This means that additional nodes in f.e. in a translation might not be copied.
 
-Future versions of this package might improve the usability and PRs to do this are very welcome.
-
-Also note that references and links inside the copied nodes are not updated to link to their copied target 
-and therefore still link to the site where they were copied from.
+Future versions of this package might solve these limitations. PRs and feature sponsorships are very welcome.
                 
 ## Installation
 
@@ -41,6 +40,7 @@ Then run `composer update` in your project directory.
 ### Settings
 
 You can also optionally allow to move nodes instead of copying them by setting the following setting in your `Settings.yaml`:
+
 ```yaml
 Shel:
   Neos:
@@ -61,6 +61,11 @@ Please create detailed issues and PRs.
 **If you use this package and want to support or speed up it's development, [get in touch with me](mailto:transfercontent@helzle.it).**
 
 Or you can also support me directly via [patreon](https://www.patreon.com/shelzle).
+
+## Thanks
+
+* The implementation of the initial release was supported by [Allcompare](https://www.allcompare.com).
+* The Neos 9 compatible release was supported by [Ahorn](https://ahorn.io).
 
 ## License
 

@@ -1,0 +1,65 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, '1.x' ]
+  pull_request:
+    branches: [ main, '1.x' ]
+
+jobs:
+  phpstan:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        phpVersion:
+          - '8.3'
+        neosVersion:
+          - '9.1'
+
+    name: 'PHPStan - Neos ${{ matrix.neosVersion }}'
+
+    steps:
+    - name: Checkout package
+      uses: actions/checkout@v3
+      with:
+        path: package
+
+    - name: Checkout Neos base distribution
+      uses: actions/checkout@v3
+      with:
+        repository: neos/neos-base-distribution
+        ref: ${{ matrix.neosVersion }}
+        path: neos-base-distribution
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.phpVersion }}
+        tools: composer:v2, phpstan
+
+    - name: Get composer cache directory
+      id: composer-cache
+      run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ${{ steps.composer-cache.outputs.dir }}
+        key: ${{ runner.os }}-composer-${{ matrix.neosVersion }}-${{ hashFiles('neos-base-distribution/composer.json') }}
+        restore-keys: ${{ runner.os }}-composer-${{ matrix.neosVersion }}-
+
+    - name: Copy package into distribution
+      run: |
+        mkdir -p neos-base-distribution/Packages/Plugins
+        cp -R "$GITHUB_WORKSPACE/package" neos-base-distribution/Packages/Plugins/Shel.Neos.TransferContent
+
+    - name: Install dependencies
+      working-directory: neos-base-distribution
+      run: |
+        composer config --no-plugins allow-plugins.neos/composer-plugin true
+        composer install --no-interaction --no-progress
+
+    - name: PHPStan analysis
+      working-directory: neos-base-distribution/Packages/Plugins/Shel.Neos.TransferContent
+      run: phpstan analyse -c phpstan.neon --level=max --no-progress

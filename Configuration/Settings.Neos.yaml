@@ -1,9 +1,5 @@
 Neos:
   Neos:
-    fusion:
-      autoInclude:
-        Shel.Neos.TransferContent: true
-
     userInterface:
       translation:
         autoInclude:
@@ -19,8 +15,10 @@ Neos:
             description: 'Shel.Neos.TransferContent:ContentTransfer:description'
             icon: 'fas fa-exchange-alt'
             privilegeTarget: 'Shel.Neos.TransferContent:Backend.Module.Management.ContentTransfer'
-
-Shel:
-  Neos:
-    TransferContent:
-      allowNodeMoving: false
+            additionalResources:
+              javaScripts:
+                'ContentTransfer': 'resource://Shel.Neos.TransferContent/Public/ContentTransfer.js'
+                'ContentTransferTree': 'resource://Shel.Neos.TransferContent/Public/ContentTransferTree.js'
+              styleSheets:
+                'ContentTransfer': 'resource://Shel.Neos.TransferContent/Public/ContentTransfer.css'
+                'ContentTransferTree': 'resource://Shel.Neos.TransferContent/Public/ContentTransferTree.css'

@@ -1,0 +1,6 @@
+Shel:
+  Neos:
+    TransferContent:
+      allowNodeMoving: false
+      nodeTypeFilters:
+        default: 'Neos.Neos:Document'

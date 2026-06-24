@@ -1,0 +1,11 @@
+#selectionForm {
+    h5 {
+        margin-bottom: 1em;
+    }
+
+    .neos-span6 {
+        display: flex;
+        flex-direction: column;
+        gap: 1em;
+    }
+}

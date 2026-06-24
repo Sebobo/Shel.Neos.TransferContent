@@ -15,6 +15,30 @@
                 <source>Transfer document nodes</source>
                 <target>Dokumentknoten kopieren</target>
             </trans-unit>
+            <trans-unit id="sourceDocument" xml:space="preserve">
+                <source>Source document</source>
+                <target>Quelldokument</target>
+            </trans-unit>
+            <trans-unit id="targetDocument" xml:space="preserve">
+                <source>Target document</source>
+                <target>Zieldokument</target>
+            </trans-unit>
+            <trans-unit id="sourceDimension" xml:space="preserve">
+                <source>Source dimensions</source>
+                <target>Quell-Dimensionen</target>
+            </trans-unit>
+            <trans-unit id="targetDimension" xml:space="preserve">
+                <source>Target dimensions</source>
+                <target>Ziel-Dimensionen</target>
+            </trans-unit>
+            <trans-unit id="sourceContentRepository" xml:space="preserve">
+                <source>Source content repository</source>
+                <target>Quell-Content-Repository</target>
+            </trans-unit>
+            <trans-unit id="targetContentRepository" xml:space="preserve">
+                <source>Target content repository</source>
+                <target>Ziel-Content-Repository</target>
+            </trans-unit>
             <trans-unit id="sourceSite" xml:space="preserve">
                 <source>Source site</source>
                 <target>Quellseite</target>
@@ -77,13 +101,25 @@
                 <source>An error occurred while copying. Reference code "{0}"</source>
                 <target>Beim Kopieren ist ein Fehler aufgetreten. Referenz "{0}"</target>
             </trans-unit>
+            <trans-unit id="error.cannotMoveAcrossCr" xml:space="preserve">
+                <source>Cannot move nodes across different content repositories</source>
+                <target>Knoten können nicht zwischen verschiedenen Content-Repositories verschoben werden</target>
+            </trans-unit>
             <trans-unit id="message.copied" xml:space="preserve">
-                <source>The node was copied</source>
-                <target>Der Knoten wurde kopiert</target>
+                <source>Copied {0} node(s) in {1} variant(s)</source>
+                <target>{0} Knoten in {1} Variante(n) kopiert</target>
+            </trans-unit>
+            <trans-unit id="message.copiedNone" xml:space="preserve">
+                <source>The document was marked as copied, but no nodes were created. Check if the target node exists in the selected dimension.</source>
+                <target>Das Dokument wurde als kopiert markiert, aber es wurden keine Kopie erzeugt. Überprüfen Sie, ob das Zieldokument in der ausgewählten Dimension existiert.</target>
             </trans-unit>
             <trans-unit id="message.moved" xml:space="preserve">
                 <source>The node was moved</source>
-                <target>Der Knoten wurde verschoben</target>
+                <target>Der Inhalt wurde verschoben</target>
+            </trans-unit>
+            <trans-unit id="warning" xml:space="preserve">
+                <source>Warning</source>
+                <target>Warnung</target>
             </trans-unit>
         </body>
     </file>
